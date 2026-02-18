@@ -15,7 +15,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LoadingState, ErrorState } from "@/components/shared/LoadingState";
+import { LoadingState, ErrorState, WarningBanner } from "@/components/shared/LoadingState";
 import { ProviderBadge } from "@/components/shared/ProviderBadge";
 import { formatPrice, formatContextLength } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -137,6 +137,8 @@ export function ComparisonPage() {
         <h1 className="text-3xl font-bold tracking-tight">Model Comparison</h1>
         <p className="text-muted-foreground">Compare models across all dimensions</p>
       </div>
+
+      <WarningBanner warnings={data?.warnings || []} />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">

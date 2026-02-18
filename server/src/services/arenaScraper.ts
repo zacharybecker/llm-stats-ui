@@ -1,6 +1,4 @@
 import axios from 'axios';
-import fs from 'fs';
-import path from 'path';
 import { ArenaEntry } from '../types/benchmarks';
 import { getCached, setCached } from './cache';
 import { env } from '../config/env';
@@ -11,30 +9,12 @@ const ARENA_URLS = [
   'https://raw.githubusercontent.com/lmarena/chatbot-arena-leaderboard/main/data/leaderboard_table.json',
 ];
 
-function loadFallbackArena(): ArenaEntry[] {
-  try {
-    const tryPaths = [
-      path.join(__dirname, '..', 'data', 'fallback-arena.json'),
-      path.join(__dirname, '..', '..', 'src', 'data', 'fallback-arena.json'),
-    ];
-    for (const p of tryPaths) {
-      if (fs.existsSync(p)) {
-        const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-        console.log(`Loaded ${data.length} fallback arena entries`);
-        return data;
-      }
-    }
-  } catch (e) {
-    console.error('Failed to load fallback arena data');
-  }
-  return [];
-}
-
 export async function fetchArenaRankings(): Promise<ArenaEntry[]> {
   const cached = getCached<ArenaEntry[]>(CACHE_KEY);
   if (cached) return cached;
 
-  // Try live sources
+  const errors: string[] = [];
+
   for (const url of ARENA_URLS) {
     try {
       const response = await axios.get(url, { timeout: 10000 });
@@ -52,18 +32,13 @@ export async function fetchArenaRankings(): Promise<ArenaEntry[]> {
         console.log(`Fetched ${entries.length} entries from Arena leaderboard`);
         return entries;
       }
-    } catch {
-      // Try next URL
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : String(error));
     }
   }
 
-  // Use fallback
-  console.warn('Live arena fetch failed, using fallback data');
-  const fallback = loadFallbackArena();
-  if (fallback.length > 0) {
-    setCached(CACHE_KEY, fallback, env.ARENA_CACHE_TTL);
-  }
-  return fallback;
+  console.error('All Arena leaderboard sources failed:', errors.join('; '));
+  throw new Error('Failed to fetch Arena leaderboard data');
 }
 
 function normalizeArenaData(data: unknown[]): ArenaEntry[] {
@@ -118,13 +93,10 @@ function normalizeObjectFormat(data: Record<string, unknown>): ArenaEntry[] {
 export function buildArenaMap(entries: ArenaEntry[]): Map<string, ArenaEntry> {
   const map = new Map<string, ArenaEntry>();
   for (const entry of entries) {
-    // Index by name
     const name = (entry.name || '').toLowerCase();
     if (name) map.set(name, entry);
-    // Index by key (often the slug form like "gpt-4o-mini")
     const key = (entry.key || '').toLowerCase();
     if (key && !map.has(key)) map.set(key, entry);
-    // Strip common suffixes for matching
     for (const val of [name, key]) {
       if (!val) continue;
       const stripped = val

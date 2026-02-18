@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && cp -r src/data dist/",
+    "build": "tsc",
     "start": "node dist/index.js"
   },
   "dependencies": {

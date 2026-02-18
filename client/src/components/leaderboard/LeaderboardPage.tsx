@@ -3,7 +3,7 @@ import { useBenchmarks } from "@/hooks/useModels";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { LoadingState, ErrorState } from "@/components/shared/LoadingState";
+import { LoadingState, ErrorState, WarningBanner } from "@/components/shared/LoadingState";
 import { ProviderBadge } from "@/components/shared/ProviderBadge";
 import { Link } from "react-router-dom";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend, Tooltip } from "recharts";
@@ -25,9 +25,11 @@ function ArenaTab() {
   if (error) return <ErrorState message="Failed to load arena data" onRetry={() => refetch()} />;
 
   const models = data?.data || [];
+  const warnings = data?.warnings || [];
 
   return (
     <div className="space-y-4">
+      <WarningBanner warnings={warnings} />
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -80,9 +82,12 @@ function OpenLLMTab() {
   if (error) return <ErrorState message="Failed to load benchmark data" onRetry={() => refetch()} />;
 
   const models = data?.data || [];
+  const warnings = data?.warnings || [];
 
   return (
-    <div className="rounded-md border">
+    <div className="space-y-4">
+      <WarningBanner warnings={warnings} />
+      <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -122,6 +127,7 @@ function OpenLLMTab() {
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

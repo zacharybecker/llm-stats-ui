@@ -3,7 +3,7 @@ import { usePricing } from "@/hooks/useModels";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { LoadingState, ErrorState } from "@/components/shared/LoadingState";
+import { LoadingState, ErrorState, WarningBanner } from "@/components/shared/LoadingState";
 import { ProviderBadge } from "@/components/shared/ProviderBadge";
 import { formatPrice } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
@@ -132,6 +132,7 @@ export function PricingPage() {
   if (error) return <ErrorState message="Failed to load pricing" onRetry={() => refetch()} />;
 
   const models = data?.data || [];
+  const warnings = data?.warnings || [];
 
   const toggleSort = (field: "input" | "output") => {
     if (sortField === field) {
@@ -149,6 +150,7 @@ export function PricingPage() {
         <p className="text-muted-foreground">Compare model pricing and estimate costs</p>
       </div>
 
+      <WarningBanner warnings={warnings} />
       <CostCalculator models={models} />
 
       <Card>

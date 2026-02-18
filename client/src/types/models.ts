@@ -41,4 +41,5 @@ export interface MergedModel {
 export interface ModelsResponse {
   data: MergedModel[];
   total: number;
+  warnings?: string[];
 }

@@ -1,7 +1,7 @@
 import { useModels } from "@/hooks/useModels";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LoadingState, ErrorState } from "@/components/shared/LoadingState";
+import { LoadingState, ErrorState, WarningBanner } from "@/components/shared/LoadingState";
 import { ProviderBadge, CapabilityBadges } from "@/components/shared/ProviderBadge";
 import { formatPrice, formatContextLength } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -138,6 +138,7 @@ export function DashboardPage() {
   if (error) return <ErrorState message="Failed to load models" onRetry={() => refetch()} />;
 
   const models = data?.data || [];
+  const warnings = data?.warnings || [];
 
   return (
     <div className="space-y-6">
@@ -146,6 +147,7 @@ export function DashboardPage() {
         <p className="text-muted-foreground">Overview of all available LLM models</p>
       </div>
 
+      <WarningBanner warnings={warnings} />
       <StatsOverview models={models} />
       <TopModelsChart models={models} />
 

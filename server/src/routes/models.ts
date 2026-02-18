@@ -5,7 +5,8 @@ const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
   try {
-    let models = await getAllModels();
+    const { models: allModels, status } = await getAllModels();
+    let models = allModels;
 
     // Filter by provider
     const provider = req.query.provider as string | undefined;
@@ -61,7 +62,7 @@ router.get('/', async (req: Request, res: Response) => {
       });
     }
 
-    res.json({ data: models, total: models.length });
+    res.json({ data: models, total: models.length, warnings: status.warnings });
   } catch (error) {
     console.error('Error fetching models:', error);
     res.status(500).json({ error: 'Failed to fetch models' });

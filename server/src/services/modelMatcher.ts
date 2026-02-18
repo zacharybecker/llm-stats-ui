@@ -33,19 +33,82 @@ function extractProvider(modelId: string): string {
   return parts.length > 1 ? parts[0] : 'unknown';
 }
 
+/**
+ * Aggressively normalize a model name for fuzzy arena matching.
+ * Strips version numbers, date suffixes, common suffixes, and normalizes separators.
+ */
+function normalizeForArenaMatch(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/-instruct$/, '')
+    .replace(/-chat$/, '')
+    .replace(/-hf$/, '')
+    .replace(/-online$/, '')
+    .replace(/:free$/, '')
+    .replace(/:extended$/, '')
+    // Strip date suffixes like -2024-01-01 or -2411
+    .replace(/-\d{4}-\d{2}(-\d{2})?$/, '')
+    .replace(/-\d{4}$/, '')
+    // Strip -preview, -latest, -exp
+    .replace(/-preview$/, '')
+    .replace(/-latest$/, '')
+    .replace(/-exp$/, '')
+    // Strip trailing -001, -002 etc version suffixes
+    .replace(/-0\d{2}$/, '')
+    // Normalize dots and dashes (try both)
+    .replace(/\./g, '-');
+}
+
+/**
+ * Generate candidate keys from a model name for arena lookup.
+ * Produces multiple normalized variants to match against the arena map.
+ */
+function arenaMatchCandidates(modelId: string): string[] {
+  const bare = bareModelName(modelId);
+  const normalized = normalizeModelId(bare);
+  const aggressive = normalizeForArenaMatch(bare);
+
+  const candidates = new Set<string>();
+  candidates.add(bare);
+  candidates.add(normalized);
+  candidates.add(aggressive);
+
+  // Also try with dots as dashes and vice versa
+  candidates.add(bare.replace(/\./g, '-'));
+  candidates.add(bare.replace(/-/g, '.'));
+  candidates.add(normalized.replace(/\./g, '-'));
+  candidates.add(normalized.replace(/-/g, '.'));
+
+  // Handle version number reordering: "gemini-pro-1.5" <-> "gemini-1.5-pro"
+  // Match pattern: name-variant-version <-> name-version-variant
+  const versionSwap = bare.match(/^(.+?)-([a-z]+)-(\d+[\.\d]*)$/);
+  if (versionSwap) {
+    candidates.add(`${versionSwap[1]}-${versionSwap[3]}-${versionSwap[2]}`);
+    candidates.add(`${versionSwap[1]}-${versionSwap[3].replace(/\./g, '-')}-${versionSwap[2]}`);
+  }
+  const versionSwap2 = bare.match(/^(.+?)-(\d+[\.\d]*)-([a-z]+)$/);
+  if (versionSwap2) {
+    candidates.add(`${versionSwap2[1]}-${versionSwap2[3]}-${versionSwap2[2]}`);
+    candidates.add(`${versionSwap2[1]}-${versionSwap2[3]}-${versionSwap2[2].replace(/\./g, '-')}`);
+  }
+
+  // dots-as-dashes for the version portion: "3.5" -> "3-5"
+  if (bare.includes('.')) {
+    candidates.add(bare.replace(/\./g, '-'));
+  }
+
+  return Array.from(candidates);
+}
+
 function matchOpenRouter(
   configModel: string,
   orMap: Map<string, OpenRouterModel>
 ): OpenRouterModel | undefined {
-  // Direct match
   if (orMap.has(configModel)) return orMap.get(configModel);
-  // Lowercase match
   const lower = configModel.toLowerCase();
   if (orMap.has(lower)) return orMap.get(lower);
-  // Normalized match
   const normalized = normalizeModelId(configModel);
   if (orMap.has(normalized)) return orMap.get(normalized);
-  // Try without provider prefix for matching
   const bare = bareModelName(configModel);
   for (const [key, model] of orMap.entries()) {
     if (bareModelName(key) === bare) return model;
@@ -57,14 +120,11 @@ function matchLiteLLMPricing(
   configModel: string,
   pricing: LiteLLMPricingMap
 ): [string, LiteLLMPricingEntry] | undefined {
-  // Direct match
   if (pricing[configModel]) return [configModel, pricing[configModel]];
-  // Lowercase match
   const lower = configModel.toLowerCase();
   for (const [key, val] of Object.entries(pricing)) {
     if (key.toLowerCase() === lower) return [key, val];
   }
-  // Bare model name match
   const bare = bareModelName(configModel);
   for (const [key, val] of Object.entries(pricing)) {
     if (bareModelName(key) === bare) return [key, val];
@@ -77,12 +137,10 @@ function matchBenchmark(
   hfId: string | undefined,
   benchMap: Map<string, OpenLLMLeaderboardEntry>
 ): OpenLLMLeaderboardEntry | undefined {
-  // Try HuggingFace ID from OpenRouter
   if (hfId) {
     const entry = benchMap.get(hfId.toLowerCase());
     if (entry) return entry;
   }
-  // Try bare model name
   const bare = bareModelName(modelId);
   return benchMap.get(bare);
 }
@@ -91,48 +149,17 @@ function matchArena(
   modelId: string,
   arenaMap: Map<string, ArenaEntry>
 ): ArenaEntry | undefined {
-  const bare = bareModelName(modelId);
-  const normalized = normalizeModelId(bare);
+  const candidates = arenaMatchCandidates(modelId);
 
-  // Direct match attempts
-  if (arenaMap.has(bare)) return arenaMap.get(bare);
-  if (arenaMap.has(normalized)) return arenaMap.get(normalized);
-
-  // Try without "-instruct" suffix
-  const noInstruct = bare.replace(/-instruct$/, '');
-  if (noInstruct !== bare && arenaMap.has(noInstruct)) return arenaMap.get(noInstruct);
-
-  // Try with dots replaced by dashes and vice versa
-  const dotsAsDashes = bare.replace(/\./g, '-');
-  if (dotsAsDashes !== bare && arenaMap.has(dotsAsDashes)) return arenaMap.get(dotsAsDashes);
-  const dashesAsDots = bare.replace(/-/g, '.');
-  if (dashesAsDots !== bare && arenaMap.has(dashesAsDots)) return arenaMap.get(dashesAsDots);
-
-  // Try common name mappings
-  const nameMap: Record<string, string[]> = {
-    'gpt-4o': ['gpt-4o', 'gpt-4o-2024'],
-    'gpt-4-turbo': ['gpt-4-turbo', 'gpt-4-1106'],
-    'claude-3.5-sonnet': ['claude-3-5-sonnet', 'claude-3.5-sonnet'],
-    'claude-3-opus': ['claude-3-opus'],
-    'gemini-pro-1.5': ['gemini-1.5-pro', 'gemini-pro'],
-    'gemini-1.5-pro': ['gemini-1.5-pro', 'gemini-pro', 'gemini-pro-1.5'],
-    'gemini-1.5-flash': ['gemini-1.5-flash', 'gemini-flash-1.5'],
-    'gemini-2.0-flash-001': ['gemini-2.0-flash'],
-    'grok-2-1212': ['grok-2'],
-    'mistral-large-2411': ['mistral-large'],
-  };
-
-  for (const [, aliases] of Object.entries(nameMap)) {
-    if (aliases.includes(bare) || aliases.includes(normalized)) {
-      for (const alias of aliases) {
-        if (arenaMap.has(alias)) return arenaMap.get(alias);
-      }
-    }
+  // Try all candidate keys against the arena map
+  for (const candidate of candidates) {
+    if (arenaMap.has(candidate)) return arenaMap.get(candidate);
   }
 
-  // Fuzzy: try prefix matching (find arena entry that starts with normalized bare name)
+  // Fuzzy: prefix matching as last resort
+  const aggressive = normalizeForArenaMatch(bareModelName(modelId));
   for (const [key, entry] of arenaMap.entries()) {
-    if (key.startsWith(normalized) || normalized.startsWith(key)) {
+    if (key.startsWith(aggressive) || aggressive.startsWith(key)) {
       return entry;
     }
   }
@@ -157,7 +184,6 @@ function mergeModelData(
   if (benchmark) sources.push('openllm');
   if (arena) sources.push('arena');
 
-  // Pricing: OpenRouter takes priority, fallback to LiteLLM
   let inputPerMillion: number | null = null;
   let outputPerMillion: number | null = null;
   let cacheReadPerToken: number | null = null;
@@ -196,7 +222,6 @@ function mergeModelData(
     }
   }
 
-  // Capabilities: LiteLLM pricing has the best data
   const lp = litellmPricing?.[1];
   const capabilities = {
     vision: lp?.supports_vision || orModel?.architecture?.modality?.includes('image') || false,
@@ -236,14 +261,32 @@ function mergeModelData(
   };
 }
 
-export async function getAllModels(): Promise<MergedModel[]> {
-  // Fetch all data sources in parallel
+export interface DataSourceStatus {
+  warnings: string[];
+}
+
+export async function getAllModels(): Promise<{ models: MergedModel[]; status: DataSourceStatus }> {
+  const warnings: string[] = [];
+
+  // Fetch all data sources in parallel, catching individual failures
   const [configModels, orModels, litellmPricing, benchmarks, arenaEntries] = await Promise.all([
     Promise.resolve(parseConfig()),
-    fetchOpenRouterModels(),
-    fetchLiteLLMPricing(),
-    fetchOpenLLMBenchmarks(),
-    fetchArenaRankings(),
+    fetchOpenRouterModels().catch((err) => {
+      warnings.push(`OpenRouter: ${err instanceof Error ? err.message : 'failed to load'}`);
+      return [] as OpenRouterModel[];
+    }),
+    fetchLiteLLMPricing().catch((err) => {
+      warnings.push(`LiteLLM pricing: ${err instanceof Error ? err.message : 'failed to load'}`);
+      return {} as LiteLLMPricingMap;
+    }),
+    fetchOpenLLMBenchmarks().catch((err) => {
+      warnings.push(`Open LLM Leaderboard: ${err instanceof Error ? err.message : 'failed to load'}`);
+      return [] as OpenLLMLeaderboardEntry[];
+    }),
+    fetchArenaRankings().catch((err) => {
+      warnings.push(`Arena leaderboard: ${err instanceof Error ? err.message : 'failed to load'}`);
+      return [] as ArenaEntry[];
+    }),
   ]);
 
   debug('--- Data Source Summary ---');
@@ -252,6 +295,7 @@ export async function getAllModels(): Promise<MergedModel[]> {
   debug(`LiteLLM pricing entries: ${Object.keys(litellmPricing).length}`);
   debug(`Benchmark entries: ${benchmarks.length}`);
   debug(`Arena entries: ${arenaEntries.length}`);
+  if (warnings.length > 0) debug(`Warnings: ${warnings.join(', ')}`);
 
   const orMap = buildOpenRouterMap(orModels);
   const benchMap = buildBenchmarkMap(benchmarks);
@@ -260,11 +304,9 @@ export async function getAllModels(): Promise<MergedModel[]> {
   const mergedModels = new Map<string, MergedModel>();
 
   debug('--- Matching Configured Models ---');
-  // First pass: process configured models
   for (const configEntry of configModels) {
     const modelParam = configEntry.litellm_params.model;
 
-    // Handle wildcard entries like "anthropic/*"
     if (modelParam.includes('*')) {
       const prefix = modelParam.replace('*', '').toLowerCase();
       let wildcardCount = 0;
@@ -296,7 +338,6 @@ export async function getAllModels(): Promise<MergedModel[]> {
     mergedModels.set(id, mergeModelData(configEntry, orModel, lp, bench, arena));
   }
 
-  // Second pass: add all OpenRouter models that weren't in config (not configured)
   let unconfiguredCount = 0;
   for (const orModel of orModels) {
     if (!mergedModels.has(orModel.id)) {
@@ -313,10 +354,13 @@ export async function getAllModels(): Promise<MergedModel[]> {
   debug(`Unconfigured OpenRouter models added: ${unconfiguredCount}`);
   debug(`Total merged models: ${mergedModels.size}`);
 
-  return Array.from(mergedModels.values());
+  return {
+    models: Array.from(mergedModels.values()),
+    status: { warnings },
+  };
 }
 
 export async function getModelById(id: string): Promise<MergedModel | undefined> {
-  const allModels = await getAllModels();
-  return allModels.find((m) => m.id === id);
+  const { models } = await getAllModels();
+  return models.find((m) => m.id === id);
 }

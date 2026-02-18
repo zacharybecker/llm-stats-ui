@@ -5,10 +5,9 @@ const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
   try {
-    let models = await getAllModels();
+    const { models: allModels, status } = await getAllModels();
 
-    // Only include models with pricing data
-    models = models.filter(
+    let models = allModels.filter(
       (m) => m.pricing.input_per_million !== null || m.pricing.output_per_million !== null
     );
 
@@ -53,11 +52,11 @@ router.get('/', async (req: Request, res: Response) => {
         return { ...m, calculated_cost: { input_cost: inputCost, output_cost: outputCost, total_cost: totalCost } };
       });
 
-      res.json({ data: withCosts, total: withCosts.length });
+      res.json({ data: withCosts, total: withCosts.length, warnings: status.warnings });
       return;
     }
 
-    res.json({ data: models, total: models.length });
+    res.json({ data: models, total: models.length, warnings: status.warnings });
   } catch (error) {
     console.error('Error fetching pricing:', error);
     res.status(500).json({ error: 'Failed to fetch pricing' });
