@@ -7,6 +7,11 @@ import { fetchOpenRouterModels, buildOpenRouterMap } from './openRouterClient';
 import { fetchLiteLLMPricing } from './litellmPricing';
 import { fetchOpenLLMBenchmarks, buildBenchmarkMap } from './benchmarkScraper';
 import { fetchArenaRankings, buildArenaMap } from './arenaScraper';
+import { env } from '../config/env';
+
+function debug(...args: unknown[]) {
+  if (env.DEBUG) console.log('[DEBUG]', ...args);
+}
 
 function normalizeModelId(id: string): string {
   return id
@@ -110,6 +115,8 @@ function matchArena(
     'claude-3.5-sonnet': ['claude-3-5-sonnet', 'claude-3.5-sonnet'],
     'claude-3-opus': ['claude-3-opus'],
     'gemini-pro-1.5': ['gemini-1.5-pro', 'gemini-pro'],
+    'gemini-1.5-pro': ['gemini-1.5-pro', 'gemini-pro', 'gemini-pro-1.5'],
+    'gemini-1.5-flash': ['gemini-1.5-flash', 'gemini-flash-1.5'],
     'gemini-2.0-flash-001': ['gemini-2.0-flash'],
     'grok-2-1212': ['grok-2'],
     'mistral-large-2411': ['mistral-large'],
@@ -239,12 +246,20 @@ export async function getAllModels(): Promise<MergedModel[]> {
     fetchArenaRankings(),
   ]);
 
+  debug('--- Data Source Summary ---');
+  debug(`Config models: ${configModels.length}`);
+  debug(`OpenRouter models: ${orModels.length}`);
+  debug(`LiteLLM pricing entries: ${Object.keys(litellmPricing).length}`);
+  debug(`Benchmark entries: ${benchmarks.length}`);
+  debug(`Arena entries: ${arenaEntries.length}`);
+
   const orMap = buildOpenRouterMap(orModels);
   const benchMap = buildBenchmarkMap(benchmarks);
   const arenaMap = buildArenaMap(arenaEntries);
 
   const mergedModels = new Map<string, MergedModel>();
 
+  debug('--- Matching Configured Models ---');
   // First pass: process configured models
   for (const configEntry of configModels) {
     const modelParam = configEntry.litellm_params.model;
@@ -252,14 +267,17 @@ export async function getAllModels(): Promise<MergedModel[]> {
     // Handle wildcard entries like "anthropic/*"
     if (modelParam.includes('*')) {
       const prefix = modelParam.replace('*', '').toLowerCase();
+      let wildcardCount = 0;
       for (const orModel of orModels) {
         if (orModel.id.toLowerCase().startsWith(prefix)) {
+          wildcardCount++;
           const lp = matchLiteLLMPricing(orModel.id, litellmPricing);
           const bench = matchBenchmark(orModel.id, orModel.hugging_face_id, benchMap);
           const arena = matchArena(orModel.id, arenaMap);
           mergedModels.set(orModel.id, mergeModelData(configEntry, orModel, lp, bench, arena));
         }
       }
+      debug(`[wildcard] ${modelParam} -> matched ${wildcardCount} OpenRouter models`);
       continue;
     }
 
@@ -268,18 +286,32 @@ export async function getAllModels(): Promise<MergedModel[]> {
     const bench = matchBenchmark(modelParam, orModel?.hugging_face_id, benchMap);
     const arena = matchArena(modelParam, arenaMap);
     const id = orModel?.id || modelParam;
+
+    debug(`[${configEntry.model_name}] (${modelParam})`);
+    debug(`  OpenRouter: ${orModel ? `YES -> ${orModel.id}` : 'NO'}`);
+    debug(`  LiteLLM:    ${lp ? `YES -> ${lp[0]}` : 'NO'}`);
+    debug(`  Benchmark:  ${bench ? `YES -> ${bench.model_name} (avg: ${bench.average})` : 'NO'}`);
+    debug(`  Arena:      ${arena ? `YES -> ${arena.name} (elo: ${arena.elo || arena.rating})` : 'NO'}`);
+
     mergedModels.set(id, mergeModelData(configEntry, orModel, lp, bench, arena));
   }
 
   // Second pass: add all OpenRouter models that weren't in config (not configured)
+  let unconfiguredCount = 0;
   for (const orModel of orModels) {
     if (!mergedModels.has(orModel.id)) {
+      unconfiguredCount++;
       const lp = matchLiteLLMPricing(orModel.id, litellmPricing);
       const bench = matchBenchmark(orModel.id, orModel.hugging_face_id, benchMap);
       const arena = matchArena(orModel.id, arenaMap);
       mergedModels.set(orModel.id, mergeModelData(null, orModel, lp, bench, arena));
     }
   }
+
+  debug('--- Results Summary ---');
+  debug(`Configured models matched: ${configModels.length}`);
+  debug(`Unconfigured OpenRouter models added: ${unconfiguredCount}`);
+  debug(`Total merged models: ${mergedModels.size}`);
 
   return Array.from(mergedModels.values());
 }
