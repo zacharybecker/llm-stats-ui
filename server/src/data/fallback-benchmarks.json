@@ -1,0 +1,12 @@
+[
+  {"model_name": "gpt-4o", "average": 62.1, "mmlu_pro": 74.5, "gpqa": 53.6, "math": 76.6, "bbh": 79.7},
+  {"model_name": "gpt-4o-mini", "average": 51.3, "mmlu_pro": 63.2, "gpqa": 40.5, "math": 70.2, "bbh": 66.1},
+  {"model_name": "claude-3-5-sonnet", "average": 63.2, "mmlu_pro": 78.2, "gpqa": 59.4, "math": 71.1, "bbh": 82.3},
+  {"model_name": "claude-3-opus", "average": 57.8, "mmlu_pro": 70.1, "gpqa": 50.4, "math": 60.1, "bbh": 83.1},
+  {"model_name": "gemini-1.5-pro", "average": 58.4, "mmlu_pro": 69.8, "gpqa": 46.2, "math": 67.7, "bbh": 72.5},
+  {"model_name": "gemini-2.0-flash", "average": 64.5, "mmlu_pro": 76.4, "gpqa": 56.1, "math": 73.4, "bbh": 80.2},
+  {"model_name": "deepseek-r1", "average": 71.8, "mmlu_pro": 79.8, "gpqa": 71.5, "math": 97.3, "bbh": 83.5},
+  {"model_name": "llama-3.3-70b-instruct", "average": 55.2, "mmlu_pro": 64.5, "gpqa": 46.7, "math": 68.0, "bbh": 75.2},
+  {"model_name": "mistral-large", "average": 52.1, "mmlu_pro": 65.3, "gpqa": 44.8, "math": 56.3, "bbh": 69.7},
+  {"model_name": "qwen-2.5-72b-instruct", "average": 57.4, "mmlu_pro": 71.1, "gpqa": 49.0, "math": 83.1, "bbh": 70.3}
+]

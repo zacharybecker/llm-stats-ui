@@ -1,0 +1,16 @@
+services:
+  model-stats-ui:
+    build: .
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./config.yaml:/app/config/config.yaml:ro
+    environment:
+      - NODE_ENV=production
+      - CACHE_TTL=300
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
