@@ -17,12 +17,14 @@ COPY server/ ./server/
 RUN npm run build --workspace=server
 
 # Stage 4: Production
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 WORKDIR /app
 
 # Install production deps only for server
 COPY server/package.json ./package.json
-RUN npm install --omit=dev
+RUN npm install --omit=dev && \
+    npm cache clean --force && \
+    rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Copy server build
 COPY --from=server-build /app/server/dist ./dist
