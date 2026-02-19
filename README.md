@@ -2,11 +2,12 @@
 
 A self-hosted dashboard that aggregates LLM data from multiple sources into a unified view. Compare pricing, benchmark scores, context lengths, and capabilities across all your configured models.
 
-<img width="1667" height="1275" alt="image" src="https://github.com/user-attachments/assets/4553ad8f-aba4-4f0b-a133-f4c8513206ab" />
-
 ## Features
 
 **Dashboard** — At-a-glance overview of all configured models with summary stats (total models, average pricing, largest context window, provider count) and model cards showing key metrics and capabilities.
+
+<img width="1667" height="1275" alt="image" src="https://github.com/user-attachments/assets/4553ad8f-aba4-4f0b-a133-f4c8513206ab" />
+
 
 **Model Comparison** — Sortable, filterable table comparing models across every dimension: provider, context length, input/output pricing, arena ratings, configuration status, and capabilities. Search by name, filter by provider, and toggle between configured-only or all available models.
 
