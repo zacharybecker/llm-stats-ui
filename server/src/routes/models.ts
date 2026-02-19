@@ -43,6 +43,8 @@ router.get('/', async (req: Request, res: Response) => {
           case 'context_length': aVal = a.context_length; bVal = b.context_length; break;
           case 'input_price': aVal = a.pricing.input_per_million; bVal = b.pricing.input_per_million; break;
           case 'output_price': aVal = a.pricing.output_per_million; bVal = b.pricing.output_per_million; break;
+          case 'arena_text': aVal = a.benchmarks.arena_text?.rating ?? null; bVal = b.benchmarks.arena_text?.rating ?? null; break;
+          case 'arena_code': aVal = a.benchmarks.arena_code?.rating ?? null; bVal = b.benchmarks.arena_code?.rating ?? null; break;
           default: return 0;
         }
 

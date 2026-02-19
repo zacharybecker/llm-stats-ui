@@ -1,3 +1,5 @@
+import { ArenaScore } from './benchmarks';
+
 export interface MergedModel {
   id: string;
   name: string;
@@ -18,7 +20,11 @@ export interface MergedModel {
     output_per_million: number | null;
     image_input: number | null;
   };
-  benchmarks: Record<string, never>;
+  benchmarks: {
+    arena_text: ArenaScore | null;
+    arena_code: ArenaScore | null;
+    arena_vision: ArenaScore | null;
+  };
   is_configured: boolean;
   data_sources: string[];
 }

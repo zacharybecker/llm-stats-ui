@@ -5,6 +5,51 @@ import { Badge } from "@/components/ui/badge";
 import { LoadingState, ErrorState } from "@/components/shared/LoadingState";
 import { ProviderBadge, CapabilityBadges } from "@/components/shared/ProviderBadge";
 import { formatPrice, formatNumber } from "@/lib/utils";
+import { ArenaScore } from "@/types/models";
+
+
+const ARENA_COLORS: Record<string, string> = {
+  Text: "#6366f1",
+  Code: "#10b981",
+  Vision: "#f59e0b",
+};
+
+function ArenaBar({ label, score, min, max }: { label: string; score: ArenaScore; min: number; max: number }) {
+  const range = max - min || 1;
+  const pct = ((score.rating - min) / range) * 100;
+  const ciLeftPct = ((score.rating_lower - min) / range) * 100;
+  const ciWidthPct = ((score.rating_upper - score.rating_lower) / range) * 100;
+  const color = ARENA_COLORS[label] || "#6366f1";
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex justify-between items-baseline">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+          <span className="font-medium text-sm">{label}</span>
+          <span className="text-xs text-muted-foreground">#{score.rank}</span>
+        </div>
+        <div className="text-right">
+          <span className="text-lg font-bold">{Math.round(score.rating)}</span>
+          <span className="text-xs text-muted-foreground ml-1.5">
+            ({Math.round(score.rating_lower)}-{Math.round(score.rating_upper)})
+          </span>
+        </div>
+      </div>
+      <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full opacity-20"
+          style={{ width: `${ciLeftPct + ciWidthPct}%`, left: `${ciLeftPct}%`, backgroundColor: color }}
+        />
+        <div
+          className="absolute inset-y-0 left-0 rounded-full"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
+      </div>
+      <div className="text-xs text-muted-foreground">{score.votes.toLocaleString()} votes</div>
+    </div>
+  );
+}
 
 export function ModelDetailPage() {
   const { "*": splat } = useParams();
@@ -13,6 +58,20 @@ export function ModelDetailPage() {
 
   if (isLoading) return <LoadingState />;
   if (error || !model) return <ErrorState message="Model not found" onRetry={() => refetch()} />;
+
+  const arenaCategories = [
+    { key: "arena_text" as const, label: "Text", score: model.benchmarks.arena_text },
+    { key: "arena_code" as const, label: "Code", score: model.benchmarks.arena_code },
+    { key: "arena_vision" as const, label: "Vision", score: model.benchmarks.arena_vision },
+  ];
+
+  const activeArena = arenaCategories.filter((c): c is typeof c & { score: ArenaScore } => c.score !== null);
+  const hasAnyArena = activeArena.length > 0;
+
+  // Scale bars from 0 to slightly above the max rating
+  const arenaMax = hasAnyArena
+    ? Math.max(...activeArena.map((c) => c.score.rating_upper)) * 1.05
+    : 0;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -88,6 +147,24 @@ export function ModelDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Arena Scores */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Arena Rankings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {hasAnyArena ? (
+            <div className="space-y-5">
+              {activeArena.map((c) => (
+                <ArenaBar key={c.key} label={c.label} score={c.score} min={0} max={arenaMax} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-sm">No arena data available for this model.</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

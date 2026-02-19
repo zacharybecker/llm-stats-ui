@@ -52,6 +52,24 @@ const columns = [
     cell: (info) => formatPrice(info.getValue()),
     sortingFn: "basic",
   }),
+  columnHelper.accessor((row) => row.benchmarks.arena_text?.rating ?? null, {
+    id: "arena_text",
+    header: "Text",
+    cell: (info) => {
+      const val = info.getValue();
+      return val != null ? Math.round(val) : "N/A";
+    },
+    sortingFn: "basic",
+  }),
+  columnHelper.accessor((row) => row.benchmarks.arena_code?.rating ?? null, {
+    id: "arena_code",
+    header: "Code",
+    cell: (info) => {
+      const val = info.getValue();
+      return val != null ? Math.round(val) : "N/A";
+    },
+    sortingFn: "basic",
+  }),
   columnHelper.accessor("is_configured", {
     header: "Status",
     cell: (info) =>
