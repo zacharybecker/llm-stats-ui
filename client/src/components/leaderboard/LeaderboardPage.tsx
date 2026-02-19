@@ -113,8 +113,7 @@ export function LeaderboardPage() {
       p.color = getModelColor(i);
     });
 
-    // Scatter data: exclude $0 (free) models
-    const scatter = sorted.filter((p) => p.blendedPrice > 0);
+    const scatter = sorted;
 
     return { scatterData: scatter, rankedList: sorted.slice(0, 20) };
   }, [models, category]);
