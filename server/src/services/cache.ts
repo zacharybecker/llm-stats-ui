@@ -13,5 +13,3 @@ export function setCached<T>(key: string, value: T, ttl: number): void {
 export function flushAll(): void {
   cache.flushAll();
 }
-
-export default cache;

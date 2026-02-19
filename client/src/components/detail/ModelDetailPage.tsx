@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { LoadingState, ErrorState } from "@/components/shared/LoadingState";
 import { ProviderBadge, CapabilityBadges } from "@/components/shared/ProviderBadge";
-import { formatPrice, formatContextLength } from "@/lib/utils";
+import { formatPrice, formatNumber } from "@/lib/utils";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from "recharts";
 
 export function ModelDetailPage() {
@@ -52,11 +52,11 @@ export function ModelDetailPage() {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="text-muted-foreground">Context Length</span>
-                <p className="font-medium text-lg">{formatContextLength(model.context_length)}</p>
+                <p className="font-medium text-lg">{formatNumber(model.context_length)}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Max Output</span>
-                <p className="font-medium text-lg">{formatContextLength(model.max_output_tokens)}</p>
+                <p className="font-medium text-lg">{formatNumber(model.max_output_tokens)}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Modality</span>

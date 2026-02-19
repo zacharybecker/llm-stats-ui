@@ -16,6 +16,8 @@ services:
       - LITELLM_PRICING_CACHE_TTL=1800
       - BENCHMARK_CACHE_TTL=3600
       - ARENA_CACHE_TTL=1800
+      # Show Ollama models as free ($0) since they run locally
+      - OLLAMA_FREE=true
       # Debug mode
       - DEBUG=false
     restart: unless-stopped

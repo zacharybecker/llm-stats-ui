@@ -26,7 +26,6 @@ function normalizeModelId(id: string): string {
 function bareModelName(id: string): string {
   const parts = id.split('/');
   let bare = parts[parts.length - 1].toLowerCase();
-  // Strip Bedrock cross-region prefixes (us., eu., apac., global.)
   bare = bare.replace(/^(us|eu|apac|global)\./, '');
   return bare;
 }
@@ -38,27 +37,17 @@ function extractProvider(modelId: string): string {
 
 /**
  * Aggressively normalize a model name for fuzzy arena matching.
- * Strips version numbers, date suffixes, common suffixes, and normalizes separators.
+ * Extends normalizeModelId with additional suffix stripping and separator normalization.
  */
 function normalizeForArenaMatch(name: string): string {
-  return name
-    .toLowerCase()
+  return normalizeModelId(name)
     .replace(/-instruct$/, '')
     .replace(/-chat$/, '')
     .replace(/-hf$/, '')
     .replace(/-online$/, '')
-    .replace(/:free$/, '')
-    .replace(/:extended$/, '')
-    // Strip date suffixes like -2024-01-01 or -2411
-    .replace(/-\d{4}-\d{2}(-\d{2})?$/, '')
     .replace(/-\d{4}$/, '')
-    // Strip -preview, -latest, -exp
-    .replace(/-preview$/, '')
-    .replace(/-latest$/, '')
     .replace(/-exp$/, '')
-    // Strip trailing -001, -002 etc version suffixes
     .replace(/-0\d{2}$/, '')
-    // Normalize dots and dashes (try both)
     .replace(/\./g, '-');
 }
 
@@ -76,14 +65,13 @@ function arenaMatchCandidates(modelId: string): string[] {
   candidates.add(normalized);
   candidates.add(aggressive);
 
-  // Also try with dots as dashes and vice versa
-  candidates.add(bare.replace(/\./g, '-'));
-  candidates.add(bare.replace(/-/g, '.'));
-  candidates.add(normalized.replace(/\./g, '-'));
-  candidates.add(normalized.replace(/-/g, '.'));
+  // Try with dots as dashes and vice versa
+  for (const v of [bare, normalized]) {
+    candidates.add(v.replace(/\./g, '-'));
+    candidates.add(v.replace(/-/g, '.'));
+  }
 
   // Handle version number reordering: "gemini-pro-1.5" <-> "gemini-1.5-pro"
-  // Match pattern: name-variant-version <-> name-version-variant
   const versionSwap = bare.match(/^(.+?)-([a-z]+)-(\d+[\.\d]*)$/);
   if (versionSwap) {
     candidates.add(`${versionSwap[1]}-${versionSwap[3]}-${versionSwap[2]}`);
@@ -93,11 +81,6 @@ function arenaMatchCandidates(modelId: string): string[] {
   if (versionSwap2) {
     candidates.add(`${versionSwap2[1]}-${versionSwap2[3]}-${versionSwap2[2]}`);
     candidates.add(`${versionSwap2[1]}-${versionSwap2[3]}-${versionSwap2[2].replace(/\./g, '-')}`);
-  }
-
-  // dots-as-dashes for the version portion: "3.5" -> "3-5"
-  if (bare.includes('.')) {
-    candidates.add(bare.replace(/\./g, '-'));
   }
 
   return Array.from(candidates);
@@ -117,6 +100,54 @@ function matchOpenRouter(
     if (bareModelName(key) === bare) return model;
   }
   return undefined;
+}
+
+/**
+ * Fuzzy-match an Ollama model name to an OpenRouter model.
+ * e.g. "ollama/gemma3:4b" → "google/gemma-3-4b-it"
+ *      "ollama/mistral"   → "mistralai/mistral-7b-instruct"
+ */
+function matchOllamaToOpenRouter(
+  ollamaModel: string,
+  orMap: Map<string, OpenRouterModel>
+): OpenRouterModel | undefined {
+  const afterPrefix = ollamaModel.replace(/^ollama\//, '');
+  const [family, sizeTag] = afterPrefix.split(':');
+
+  // Normalize family: insert hyphens at letter-digit boundaries
+  // gemma3 → gemma-3, llama3 → llama-3, mistral → mistral
+  const normalizedFamily = family
+    .replace(/([a-zA-Z])(\d)/g, '$1-$2')
+    .replace(/(\d)([a-zA-Z])/g, '$1-$2')
+    .toLowerCase();
+
+  const candidates: { model: OpenRouterModel; score: number }[] = [];
+
+  for (const [, model] of orMap.entries()) {
+    const orBare = bareModelName(model.id).toLowerCase();
+
+    // Must contain the family name
+    if (!orBare.includes(normalizedFamily)) continue;
+
+    // If size tag specified (e.g. "4b"), must contain it
+    if (sizeTag && !orBare.includes(sizeTag.toLowerCase())) continue;
+
+    let score = 0;
+    // Prefer instruct/chat variants (more useful metadata)
+    if (orBare.includes('instruct') || orBare.includes('it') || orBare.includes('chat')) score += 2;
+    // Prefer non-free entries (tend to have richer metadata)
+    if (!model.id.includes(':free')) score += 1;
+    // Prefer shorter names (more likely the canonical version)
+    score -= orBare.length * 0.01;
+
+    candidates.push({ model, score });
+  }
+
+  if (candidates.length === 0) return undefined;
+
+  candidates.sort((a, b) => b.score - a.score);
+  debug(`  Ollama fuzzy match: ${ollamaModel} -> ${candidates[0].model.id} (${candidates.length} candidates)`);
+  return candidates[0].model;
 }
 
 function matchLiteLLMPricing(
@@ -212,17 +243,24 @@ function mergeModelData(
 
   if (litellmPricing) {
     const [, lp] = litellmPricing;
-    if (inputPerMillion === null && lp.input_cost_per_token) {
+    if (inputPerMillion === null && lp.input_cost_per_token != null) {
       inputPerMillion = lp.input_cost_per_token * 1_000_000;
       priceSource = 'litellm';
     }
-    if (outputPerMillion === null && lp.output_cost_per_token) {
+    if (outputPerMillion === null && lp.output_cost_per_token != null) {
       outputPerMillion = lp.output_cost_per_token * 1_000_000;
       priceSource = priceSource || 'litellm';
     }
     if (lp.cache_read_input_token_cost) {
       cacheReadPerToken = lp.cache_read_input_token_cost;
     }
+  }
+
+  // Mark Ollama models as free (they run locally)
+  if (env.OLLAMA_FREE && provider === 'ollama') {
+    inputPerMillion = 0;
+    outputPerMillion = 0;
+    priceSource = null;
   }
 
   const lp = litellmPricing?.[1];
@@ -326,19 +364,36 @@ export async function getAllModels(includeUnconfigured: boolean = false): Promis
       continue;
     }
 
-    const orModel = matchOpenRouter(modelParam, orMap);
+    let orModel = matchOpenRouter(modelParam, orMap);
+    let ollamaFuzzy = false;
+
+    // For Ollama models, try fuzzy matching against OpenRouter to pull in
+    // context length, capabilities, and description from the base model
+    if (!orModel && extractProvider(modelParam) === 'ollama') {
+      orModel = matchOllamaToOpenRouter(modelParam, orMap);
+      if (orModel) ollamaFuzzy = true;
+    }
+
     const lp = matchLiteLLMPricing(modelParam, litellmPricing);
     const bench = matchBenchmark(modelParam, orModel?.hugging_face_id, benchMap);
     const arena = matchArena(modelParam, arenaMap);
-    const id = orModel?.id || modelParam;
+
+    const merged = mergeModelData(configEntry, orModel, lp, bench, arena);
+
+    // For Ollama fuzzy matches, keep the original model identity
+    if (ollamaFuzzy) {
+      merged.id = modelParam;
+    }
+
+    const id = merged.id;
 
     debug(`[${configEntry.model_name}] (${modelParam})`);
-    debug(`  OpenRouter: ${orModel ? `YES -> ${orModel.id}` : 'NO'}`);
+    debug(`  OpenRouter: ${orModel ? `YES -> ${orModel.id}${ollamaFuzzy ? ' (fuzzy)' : ''}` : 'NO'}`);
     debug(`  LiteLLM:    ${lp ? `YES -> ${lp[0]}` : 'NO'}`);
     debug(`  Benchmark:  ${bench ? `YES -> ${bench.model_name} (avg: ${bench.average})` : 'NO'}`);
     debug(`  Arena:      ${arena ? `YES -> ${arena.name} (elo: ${arena.elo || arena.rating})` : 'NO'}`);
 
-    mergedModels.set(id, mergeModelData(configEntry, orModel, lp, bench, arena));
+    mergedModels.set(id, merged);
   }
 
   let unconfiguredCount = 0;

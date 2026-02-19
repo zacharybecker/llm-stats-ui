@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingState, ErrorState, WarningBanner } from "@/components/shared/LoadingState";
 import { ProviderBadge, CapabilityBadges } from "@/components/shared/ProviderBadge";
-import { formatPrice, formatContextLength } from "@/lib/utils";
+import { formatPrice, formatNumber } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { MergedModel } from "@/types/models";
 
@@ -42,7 +42,7 @@ function StatsOverview({ models }: { models: MergedModel[] }) {
           <CardTitle className="text-sm font-medium">Largest Context</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatContextLength(maxContext)}</div>
+          <div className="text-2xl font-bold">{formatNumber(maxContext)}</div>
           <p className="text-xs text-muted-foreground">tokens</p>
         </CardContent>
       </Card>
@@ -76,7 +76,7 @@ function ModelCard({ model }: { model: MergedModel }) {
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
               <span className="text-muted-foreground">Context:</span>{" "}
-              <span className="font-medium">{formatContextLength(model.context_length)}</span>
+              <span className="font-medium">{formatNumber(model.context_length)}</span>
             </div>
             <div>
               <span className="text-muted-foreground">Input:</span>{" "}

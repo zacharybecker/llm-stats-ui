@@ -5,7 +5,6 @@ export function useModels(params?: {
   provider?: string;
   sort?: string;
   search?: string;
-  configured_only?: boolean;
   include_unconfigured?: boolean;
 }) {
   return useQuery({

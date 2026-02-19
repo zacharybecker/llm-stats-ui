@@ -10,7 +10,6 @@ export async function fetchModels(params?: {
   provider?: string;
   sort?: string;
   search?: string;
-  configured_only?: boolean;
   include_unconfigured?: boolean;
 }): Promise<ModelsResponse> {
   const { data } = await api.get<ModelsResponse>('/models', { params });
@@ -44,15 +43,6 @@ export async function fetchBenchmarks(params?: {
 
 export async function refreshConfig(): Promise<{ status: string; models_loaded: number }> {
   const { data } = await api.post('/config/refresh');
-  return data;
-}
-
-export async function fetchHealth(): Promise<{
-  status: string;
-  total_models: number;
-  configured_models: number;
-}> {
-  const { data } = await api.get('/health');
   return data;
 }
 

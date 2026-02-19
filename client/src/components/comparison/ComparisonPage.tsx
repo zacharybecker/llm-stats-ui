@@ -7,7 +7,6 @@ import {
   flexRender,
   createColumnHelper,
   type SortingState,
-  type ColumnFiltersState,
 } from "@tanstack/react-table";
 import { useModels } from "@/hooks/useModels";
 import { useShowAllModels } from "@/hooks/useSettings";
@@ -18,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadingState, ErrorState, WarningBanner } from "@/components/shared/LoadingState";
 import { ProviderBadge, CapabilityBadges } from "@/components/shared/ProviderBadge";
-import { formatPrice, formatContextLength } from "@/lib/utils";
+import { formatPrice, formatNumber } from "@/lib/utils";
 import { Link } from "react-router-dom";
 
 const columnHelper = createColumnHelper<MergedModel>();
@@ -41,7 +40,7 @@ const columns = [
   }),
   columnHelper.accessor("context_length", {
     header: "Context",
-    cell: (info) => formatContextLength(info.getValue()),
+    cell: (info) => formatNumber(info.getValue()),
   }),
   columnHelper.accessor("pricing.input_per_million", {
     header: "Input $/1M",
@@ -86,7 +85,6 @@ export function ComparisonPage() {
   const { data, isLoading, error, refetch } = useModels({ include_unconfigured: showAllModels });
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [showConfiguredOnly, setShowConfiguredOnly] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string>("");
 
@@ -105,10 +103,9 @@ export function ComparisonPage() {
   const table = useReactTable({
     data: models,
     columns,
-    state: { sorting, globalFilter, columnFilters },
+    state: { sorting, globalFilter },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

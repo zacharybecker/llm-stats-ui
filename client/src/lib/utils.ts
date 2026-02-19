@@ -19,11 +19,6 @@ export function formatNumber(num: number | null): string {
   return num.toString();
 }
 
-export function formatContextLength(tokens: number | null): string {
-  if (tokens === null) return "N/A";
-  return formatNumber(tokens);
-}
-
 export function getProviderColor(provider: string): string {
   const colors: Record<string, string> = {
     openai: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",

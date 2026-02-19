@@ -242,48 +242,22 @@ function CompareTab() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">Arena Elo</TableCell>
-                    {selected.map((m) => (
-                      <TableCell key={m.id} className="text-center font-mono">{m.benchmarks.arena_elo ?? "-"}</TableCell>
-                    ))}
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">OLLM Average</TableCell>
-                    {selected.map((m) => (
-                      <TableCell key={m.id} className="text-center font-mono">{m.benchmarks.ollm_average?.toFixed(1) ?? "-"}</TableCell>
-                    ))}
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">MMLU-PRO</TableCell>
-                    {selected.map((m) => (
-                      <TableCell key={m.id} className="text-center font-mono">{m.benchmarks.ollm_mmlu_pro?.toFixed(1) ?? "-"}</TableCell>
-                    ))}
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">GPQA</TableCell>
-                    {selected.map((m) => (
-                      <TableCell key={m.id} className="text-center font-mono">{m.benchmarks.ollm_gpqa?.toFixed(1) ?? "-"}</TableCell>
-                    ))}
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">MATH</TableCell>
-                    {selected.map((m) => (
-                      <TableCell key={m.id} className="text-center font-mono">{m.benchmarks.ollm_math?.toFixed(1) ?? "-"}</TableCell>
-                    ))}
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Input $/1M</TableCell>
-                    {selected.map((m) => (
-                      <TableCell key={m.id} className="text-center font-mono">{m.pricing.input_per_million != null ? `$${m.pricing.input_per_million.toFixed(2)}` : "-"}</TableCell>
-                    ))}
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Output $/1M</TableCell>
-                    {selected.map((m) => (
-                      <TableCell key={m.id} className="text-center font-mono">{m.pricing.output_per_million != null ? `$${m.pricing.output_per_million.toFixed(2)}` : "-"}</TableCell>
-                    ))}
-                  </TableRow>
+                  {([
+                    ["Arena Elo", (m: MergedModel) => m.benchmarks.arena_elo ?? "-"],
+                    ["OLLM Average", (m: MergedModel) => m.benchmarks.ollm_average?.toFixed(1) ?? "-"],
+                    ["MMLU-PRO", (m: MergedModel) => m.benchmarks.ollm_mmlu_pro?.toFixed(1) ?? "-"],
+                    ["GPQA", (m: MergedModel) => m.benchmarks.ollm_gpqa?.toFixed(1) ?? "-"],
+                    ["MATH", (m: MergedModel) => m.benchmarks.ollm_math?.toFixed(1) ?? "-"],
+                    ["Input $/1M", (m: MergedModel) => m.pricing.input_per_million != null ? `$${m.pricing.input_per_million.toFixed(2)}` : "-"],
+                    ["Output $/1M", (m: MergedModel) => m.pricing.output_per_million != null ? `$${m.pricing.output_per_million.toFixed(2)}` : "-"],
+                  ] as [string, (m: MergedModel) => string | number][]).map(([label, getValue]) => (
+                    <TableRow key={label}>
+                      <TableCell className="font-medium">{label}</TableCell>
+                      {selected.map((m) => (
+                        <TableCell key={m.id} className="text-center font-mono">{getValue(m)}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>

@@ -50,7 +50,6 @@ export function PricingPage() {
               >
                 Output $/1M {sortField === "output" && (sortDir === "asc" ? "↑" : "↓")}
               </TableHead>
-              <TableHead className="text-right">Source</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -64,7 +63,6 @@ export function PricingPage() {
                 <TableCell><ProviderBadge provider={m.provider} /></TableCell>
                 <TableCell className="text-right">{formatPrice(m.pricing.input_per_million)}</TableCell>
                 <TableCell className="text-right">{formatPrice(m.pricing.output_per_million)}</TableCell>
-                <TableCell className="text-right text-muted-foreground text-xs">{m.pricing.price_source || "N/A"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
