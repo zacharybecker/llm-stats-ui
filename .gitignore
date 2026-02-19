@@ -5,3 +5,4 @@ server/public/
 *.log
 .DS_Store
 .vite/
+.claude/
