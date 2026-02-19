@@ -96,16 +96,11 @@ function extractEntries(
         seen.add(obj.modelDisplayName);
         entries.push({
           rank: obj.rank ?? 0,
-          rankUpper: obj.rankUpper ?? obj.rank ?? 0,
-          rankLower: obj.rankLower ?? obj.rank ?? 0,
           modelDisplayName: obj.modelDisplayName,
           rating: obj.rating,
           ratingUpper: obj.ratingUpper ?? obj.rating,
           ratingLower: obj.ratingLower ?? obj.rating,
           votes: obj.votes ?? 0,
-          modelOrganization: obj.modelOrganization ?? '',
-          modelUrl: obj.modelUrl ?? '',
-          license: obj.license ?? '',
         });
       }
     } catch {
@@ -117,28 +112,17 @@ function extractEntries(
 
           // Try to extract other fields with individual regexes
           const rankMatch = match[0].match(/"rank"\s*:\s*(\d+)/);
-          const rankUpperMatch = match[0].match(/"rankUpper"\s*:\s*(\d+)/);
-          const rankLowerMatch = match[0].match(/"rankLower"\s*:\s*(\d+)/);
           const ratingUpperMatch = match[0].match(/"ratingUpper"\s*:\s*([\d.]+)/);
           const ratingLowerMatch = match[0].match(/"ratingLower"\s*:\s*([\d.]+)/);
           const votesMatch = match[0].match(/"votes"\s*:\s*(\d+)/);
-          const orgMatch = match[0].match(/"modelOrganization"\s*:\s*"([^"]+?)"/);
-          const urlMatch = match[0].match(/"modelUrl"\s*:\s*"([^"]+?)"/);
-          const licenseMatch = match[0].match(/"license"\s*:\s*"([^"]+?)"/);
 
-          const rank = rankMatch ? parseInt(rankMatch[1]) : 0;
           entries.push({
-            rank,
-            rankUpper: rankUpperMatch ? parseInt(rankUpperMatch[1]) : rank,
-            rankLower: rankLowerMatch ? parseInt(rankLowerMatch[1]) : rank,
+            rank: rankMatch ? parseInt(rankMatch[1]) : 0,
             modelDisplayName: displayName,
             rating: ratingVal,
             ratingUpper: ratingUpperMatch ? parseFloat(ratingUpperMatch[1]) : ratingVal,
             ratingLower: ratingLowerMatch ? parseFloat(ratingLowerMatch[1]) : ratingVal,
             votes: votesMatch ? parseInt(votesMatch[1]) : 0,
-            modelOrganization: orgMatch ? orgMatch[1] : '',
-            modelUrl: urlMatch ? urlMatch[1] : '',
-            license: licenseMatch ? licenseMatch[1] : '',
           });
         }
       }
@@ -177,7 +161,7 @@ export interface LMArenaData {
 }
 
 /**
- * Fetch all 4 LMArena categories in parallel.
+ * Fetch all 3 LMArena categories in parallel.
  * Individual category failures return empty arrays.
  */
 export async function fetchLMArenaData(): Promise<LMArenaData> {

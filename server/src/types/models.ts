@@ -26,7 +26,6 @@ export interface MergedModel {
     arena_text: ArenaScore | null;
     arena_code: ArenaScore | null;
     arena_vision: ArenaScore | null;
-
   };
   is_configured: boolean;
   data_sources: string[];

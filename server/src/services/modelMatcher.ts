@@ -341,7 +341,7 @@ export async function getAllModels(includeUnconfigured: boolean = false): Promis
 
   // Fetch all data sources in parallel, catching individual failures
   const [configModels, orModels, litellmPricing, arenaData] = await Promise.all([
-    Promise.resolve(parseConfig()),
+    Promise.resolve().then(() => parseConfig()),
     fetchOpenRouterModels().catch((err) => {
       warnings.push(`OpenRouter: ${err instanceof Error ? err.message : 'failed to load'}`);
       return [] as OpenRouterModel[];
@@ -370,7 +370,6 @@ export async function getAllModels(includeUnconfigured: boolean = false): Promis
   const arenaTextMap = buildLMArenaMap(arenaData.text);
   const arenaCodeMap = buildLMArenaMap(arenaData.code);
   const arenaVisionMap = buildLMArenaMap(arenaData.vision);
-
 
   const mergedModels = new Map<string, MergedModel>();
 

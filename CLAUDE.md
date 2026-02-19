@@ -23,13 +23,12 @@ There are no tests or linter configured.
 
 ### Data Flow (Server)
 
-The core logic is in `server/src/services/modelMatcher.ts`. On each API request, `getAllModels()` fetches from 5 sources in parallel:
+The core logic is in `server/src/services/modelMatcher.ts`. On each API request, `getAllModels()` fetches from 4 sources in parallel:
 
 1. **Config file** (`configParser.ts`) - reads a LiteLLM-format `config.yaml` (path via `CONFIG_PATH` env var) to get the user's configured model list
 2. **OpenRouter API** (`openRouterClient.ts`) - model metadata, descriptions, pricing, context lengths
 3. **LiteLLM pricing** (`litellmPricing.ts`) - per-token costs from BerriAI/litellm GitHub repo
-4. **Open LLM Leaderboard** (`benchmarkScraper.ts`) - HuggingFace benchmark scores
-5. **Chatbot Arena** (`arenaScraper.ts`) - ELO ratings from HuggingFace datasets
+4. **LMArena** (`lmarenaScraper.ts`) - ELO ratings for text, code, and vision categories from arena.ai
 
 Each source is cached independently with configurable TTLs (see `server/src/config/env.ts`). The matcher uses fuzzy model ID normalization (stripping date suffixes, version numbers, provider prefixes) to join data across sources. Ollama models get special fuzzy matching against OpenRouter.
 
@@ -39,7 +38,7 @@ All routes are under `/api/`:
 - `GET /api/models` - merged model list (supports `?provider=`, `?search=`, `?sort=field:dir`, `?include_unconfigured=true`)
 - `GET /api/models/:id` - single model detail (id can contain slashes like `openai/gpt-4`)
 - `GET /api/pricing` - models with pricing (supports cost calculator via `?input_tokens=&output_tokens=&requests=`)
-- `GET /api/benchmarks` - benchmark data (supports `?source=arena|openllm|all`, `?category=`)
+- `GET /api/benchmarks` - benchmark data (supports `?category=text|code|vision`)
 - `GET /api/health` - health check with data source status
 - `GET /api/config/ui` - UI config (app name)
 - `POST /api/config/refresh` - flush caches and reload config
@@ -49,7 +48,7 @@ All routes are under `/api/`:
 - React 18 + TypeScript + Vite + Tailwind CSS
 - Routing: react-router-dom with pages at `/`, `/comparison`, `/pricing`, `/leaderboard`, `/models/*`
 - Data fetching: TanStack Query hooks in `client/src/hooks/useModels.ts` wrapping API calls in `client/src/services/api.ts`
-- UI components: shadcn/ui pattern in `client/src/components/ui/` (Radix primitives + CVA + tailwind-merge)
+- UI components: shadcn/ui pattern in `client/src/components/ui/` (CVA + tailwind-merge)
 - Path alias: `@/` maps to `client/src/`
 
 ### Shared Types

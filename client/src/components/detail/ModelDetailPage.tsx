@@ -36,7 +36,6 @@ export function ModelDetailPage() {
     { key: "arena_text" as const, label: "Text", score: model.benchmarks.arena_text },
     { key: "arena_code" as const, label: "Code", score: model.benchmarks.arena_code },
     { key: "arena_vision" as const, label: "Vision", score: model.benchmarks.arena_vision },
-
   ];
 
   const radarData = arenaCategories

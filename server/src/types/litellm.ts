@@ -1,7 +1,5 @@
 export interface LiteLLMConfig {
   model_list?: LiteLLMModelEntry[];
-  litellm_settings?: Record<string, unknown>;
-  general_settings?: Record<string, unknown>;
 }
 
 export interface LiteLLMModelEntry {
@@ -31,7 +29,6 @@ export interface LiteLLMPricingEntry {
   supports_vision?: boolean;
   supports_prompt_caching?: boolean;
   supports_reasoning?: boolean;
-  supports_tool_choice?: boolean;
   [key: string]: unknown;
 }
 

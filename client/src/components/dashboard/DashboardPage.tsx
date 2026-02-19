@@ -86,12 +86,6 @@ function ModelCard({ model }: { model: MergedModel }) {
               <span className="text-muted-foreground">Output:</span>{" "}
               <span className="font-medium">{formatPrice(model.pricing.output_per_million)}</span>
             </div>
-            {model.benchmarks.arena_text && (
-              <div>
-                <span className="text-muted-foreground">Text:</span>{" "}
-                <span className="font-medium">{Math.round(model.benchmarks.arena_text.rating)}</span>
-              </div>
-            )}
           </div>
           <CapabilityBadges capabilities={model.capabilities} />
         </CardContent>
