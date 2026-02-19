@@ -19,6 +19,41 @@ export function formatNumber(num: number | null): string {
   return num.toString();
 }
 
+export function getProviderHex(provider: string): string {
+  const colors: Record<string, string> = {
+    openai: "#10b981",
+    anthropic: "#f97316",
+    google: "#3b82f6",
+    meta: "#8b5cf6",
+    "meta-llama": "#8b5cf6",
+    mistralai: "#a855f7",
+    cohere: "#ec4899",
+    deepseek: "#06b6d4",
+    xai: "#f43f5e",
+    azure: "#0ea5e9",
+    bedrock: "#f59e0b",
+    ollama: "#22c55e",
+    groq: "#e11d48",
+    together: "#7c3aed",
+    fireworks: "#ef4444",
+    perplexity: "#84cc16",
+  };
+  return colors[provider.toLowerCase()] || "#94a3b8";
+}
+
+// Broad palette for assigning unique colors per model index
+const MODEL_PALETTE = [
+  "#ef4444", "#f97316", "#f59e0b", "#eab308", "#84cc16",
+  "#22c55e", "#10b981", "#14b8a6", "#06b6d4", "#0ea5e9",
+  "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#d946ef",
+  "#ec4899", "#f43f5e", "#fb923c", "#a3e635", "#2dd4bf",
+  "#38bdf8", "#818cf8", "#c084fc", "#f472b6", "#fb7185",
+];
+
+export function getModelColor(index: number): string {
+  return MODEL_PALETTE[index % MODEL_PALETTE.length];
+}
+
 export function getProviderColor(provider: string): string {
   const colors: Record<string, string> = {
     openai: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
