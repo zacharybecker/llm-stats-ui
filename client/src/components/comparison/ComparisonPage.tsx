@@ -52,14 +52,22 @@ const columns = [
     cell: (info) => formatPrice(info.getValue()),
     sortingFn: "basic",
   }),
-  columnHelper.accessor("benchmarks.arena_elo", {
-    header: "Arena Elo",
-    cell: (info) => info.getValue() ?? "N/A",
+  columnHelper.accessor((row) => row.benchmarks.arena_text?.rating ?? null, {
+    id: "arena_text",
+    header: "Text",
+    cell: (info) => {
+      const val = info.getValue();
+      return val != null ? Math.round(val) : "N/A";
+    },
     sortingFn: "basic",
   }),
-  columnHelper.accessor("benchmarks.ollm_average", {
-    header: "Benchmark Avg",
-    cell: (info) => info.getValue()?.toFixed(1) ?? "N/A",
+  columnHelper.accessor((row) => row.benchmarks.arena_code?.rating ?? null, {
+    id: "arena_code",
+    header: "Code",
+    cell: (info) => {
+      const val = info.getValue();
+      return val != null ? Math.round(val) : "N/A";
+    },
     sortingFn: "basic",
   }),
   columnHelper.accessor("is_configured", {

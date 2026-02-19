@@ -6,6 +6,23 @@ import { LoadingState, ErrorState } from "@/components/shared/LoadingState";
 import { ProviderBadge, CapabilityBadges } from "@/components/shared/ProviderBadge";
 import { formatPrice, formatNumber } from "@/lib/utils";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { ArenaScore } from "@/types/models";
+
+function ArenaCard({ label, score }: { label: string; score: ArenaScore | null }) {
+  if (!score) return null;
+  return (
+    <div className="p-3 rounded-lg bg-muted space-y-1">
+      <div className="flex justify-between items-center">
+        <span className="font-medium text-sm">{label}</span>
+        <span className="text-xs text-muted-foreground">#{score.rank}</span>
+      </div>
+      <div className="text-2xl font-bold">{Math.round(score.rating)}</div>
+      <div className="text-xs text-muted-foreground">
+        CI: {Math.round(score.rating_lower)} - {Math.round(score.rating_upper)} | {score.votes.toLocaleString()} votes
+      </div>
+    </div>
+  );
+}
 
 export function ModelDetailPage() {
   const { "*": splat } = useParams();
@@ -15,12 +32,21 @@ export function ModelDetailPage() {
   if (isLoading) return <LoadingState />;
   if (error || !model) return <ErrorState message="Model not found" onRetry={() => refetch()} />;
 
-  const radarData = [
-    { metric: "MMLU-PRO", value: model.benchmarks.ollm_mmlu_pro || 0, fullMark: 100 },
-    { metric: "GPQA", value: model.benchmarks.ollm_gpqa || 0, fullMark: 100 },
-    { metric: "MATH", value: model.benchmarks.ollm_math || 0, fullMark: 100 },
-    { metric: "BBH", value: model.benchmarks.ollm_bbh || 0, fullMark: 100 },
-  ].filter((d) => d.value > 0);
+  const arenaCategories = [
+    { key: "arena_text" as const, label: "Text", score: model.benchmarks.arena_text },
+    { key: "arena_code" as const, label: "Code", score: model.benchmarks.arena_code },
+    { key: "arena_vision" as const, label: "Vision", score: model.benchmarks.arena_vision },
+
+  ];
+
+  const radarData = arenaCategories
+    .filter((c) => c.score !== null)
+    .map((c) => ({
+      metric: c.label,
+      value: c.score!.rating,
+    }));
+
+  const hasAnyArena = arenaCategories.some((c) => c.score !== null);
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -111,77 +137,30 @@ export function ModelDetailPage() {
         </Card>
       </div>
 
-      {/* Benchmarks */}
+      {/* Arena Scores */}
       <Card>
         <CardHeader>
-          <CardTitle>Benchmarks</CardTitle>
+          <CardTitle>Arena Rankings</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-3">
-              {model.benchmarks.arena_elo && (
-                <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
-                  <span className="font-medium">Arena Elo</span>
-                  <span className="text-2xl font-bold">{model.benchmarks.arena_elo}</span>
-                </div>
-              )}
-              {model.benchmarks.ollm_average && (
-                <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
-                  <span className="font-medium">OLLM Average</span>
-                  <span className="text-xl font-bold">{model.benchmarks.ollm_average.toFixed(1)}</span>
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                {model.benchmarks.ollm_mmlu_pro != null && (
-                  <div className="p-2 rounded bg-muted/50">
-                    <span className="text-muted-foreground">MMLU-PRO</span>
-                    <p className="font-medium">{model.benchmarks.ollm_mmlu_pro.toFixed(1)}</p>
-                  </div>
-                )}
-                {model.benchmarks.ollm_gpqa != null && (
-                  <div className="p-2 rounded bg-muted/50">
-                    <span className="text-muted-foreground">GPQA</span>
-                    <p className="font-medium">{model.benchmarks.ollm_gpqa.toFixed(1)}</p>
-                  </div>
-                )}
-                {model.benchmarks.ollm_math != null && (
-                  <div className="p-2 rounded bg-muted/50">
-                    <span className="text-muted-foreground">MATH</span>
-                    <p className="font-medium">{model.benchmarks.ollm_math.toFixed(1)}</p>
-                  </div>
-                )}
-                {model.benchmarks.ollm_bbh != null && (
-                  <div className="p-2 rounded bg-muted/50">
-                    <span className="text-muted-foreground">BBH</span>
-                    <p className="font-medium">{model.benchmarks.ollm_bbh.toFixed(1)}</p>
-                  </div>
-                )}
-              </div>
+              {arenaCategories.map((c) => (
+                <ArenaCard key={c.key} label={c.label} score={c.score} />
+              ))}
 
-              {model.benchmarks.arena_categories && Object.keys(model.benchmarks.arena_categories).length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Arena Categories</h4>
-                  {Object.entries(model.benchmarks.arena_categories).map(([cat, elo]) => (
-                    <div key={cat} className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground capitalize">{cat}</span>
-                      <span className="font-mono">{elo}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {!model.benchmarks.arena_elo && !model.benchmarks.ollm_average && (
-                <p className="text-muted-foreground text-sm">No benchmark data available for this model.</p>
+              {!hasAnyArena && (
+                <p className="text-muted-foreground text-sm">No arena data available for this model.</p>
               )}
             </div>
 
-            {radarData.length >= 3 && (
+            {radarData.length >= 2 && (
               <div>
                 <ResponsiveContainer width="100%" height={300}>
                   <RadarChart data={radarData}>
                     <PolarGrid />
                     <PolarAngleAxis dataKey="metric" />
-                    <PolarRadiusAxis domain={[0, 100]} />
+                    <PolarRadiusAxis />
                     <Tooltip />
                     <Radar
                       name={model.name}

@@ -33,8 +33,7 @@ export async function fetchPricing(params?: {
 }
 
 export async function fetchBenchmarks(params?: {
-  source?: 'arena' | 'openllm' | 'all';
-  category?: string;
+  category?: 'text' | 'code' | 'vision' | 'all';
   include_unconfigured?: boolean;
 }): Promise<ModelsResponse> {
   const { data } = await api.get<ModelsResponse>('/benchmarks', { params });

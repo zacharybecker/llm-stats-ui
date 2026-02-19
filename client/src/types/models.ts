@@ -1,3 +1,11 @@
+export interface ArenaScore {
+  rating: number;
+  rating_upper: number;
+  rating_lower: number;
+  rank: number;
+  votes: number;
+}
+
 export interface MergedModel {
   id: string;
   name: string;
@@ -21,13 +29,10 @@ export interface MergedModel {
     price_source: 'openrouter' | 'litellm' | null;
   };
   benchmarks: {
-    arena_elo: number | null;
-    arena_categories: Record<string, number> | null;
-    ollm_average: number | null;
-    ollm_mmlu_pro: number | null;
-    ollm_gpqa: number | null;
-    ollm_math: number | null;
-    ollm_bbh: number | null;
+    arena_text: ArenaScore | null;
+    arena_code: ArenaScore | null;
+    arena_vision: ArenaScore | null;
+
   };
   is_configured: boolean;
   data_sources: string[];

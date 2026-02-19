@@ -86,10 +86,10 @@ function ModelCard({ model }: { model: MergedModel }) {
               <span className="text-muted-foreground">Output:</span>{" "}
               <span className="font-medium">{formatPrice(model.pricing.output_per_million)}</span>
             </div>
-            {model.benchmarks.arena_elo && (
+            {model.benchmarks.arena_text && (
               <div>
-                <span className="text-muted-foreground">Elo:</span>{" "}
-                <span className="font-medium">{model.benchmarks.arena_elo}</span>
+                <span className="text-muted-foreground">Text:</span>{" "}
+                <span className="font-medium">{Math.round(model.benchmarks.arena_text.rating)}</span>
               </div>
             )}
           </div>
@@ -140,7 +140,7 @@ export function DashboardPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {models
               .filter((m) => !m.is_configured)
-              .sort((a, b) => (b.benchmarks.arena_elo || 0) - (a.benchmarks.arena_elo || 0))
+              .sort((a, b) => (b.benchmarks.arena_text?.rating || 0) - (a.benchmarks.arena_text?.rating || 0))
               .slice(0, 20)
               .map((model) => (
                 <ModelCard key={model.id} model={model} />

@@ -37,8 +37,7 @@ export function usePricing(params?: {
 }
 
 export function useBenchmarks(params?: {
-  source?: 'arena' | 'openllm' | 'all';
-  category?: string;
+  category?: 'text' | 'code' | 'vision' | 'all';
   include_unconfigured?: boolean;
 }) {
   return useQuery({

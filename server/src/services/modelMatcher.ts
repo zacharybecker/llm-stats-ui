@@ -1,12 +1,11 @@
 import { LiteLLMModelEntry, LiteLLMPricingMap, LiteLLMPricingEntry } from '../types/litellm';
 import { OpenRouterModel } from '../types/openrouter';
-import { OpenLLMLeaderboardEntry, ArenaEntry } from '../types/benchmarks';
+import { LMArenaEntry, ArenaScore } from '../types/benchmarks';
 import { MergedModel } from '../types/models';
 import { parseConfig } from './configParser';
 import { fetchOpenRouterModels, buildOpenRouterMap } from './openRouterClient';
 import { fetchLiteLLMPricing } from './litellmPricing';
-import { fetchOpenLLMBenchmarks, buildBenchmarkMap } from './benchmarkScraper';
-import { fetchArenaRankings, buildArenaMap } from './arenaScraper';
+import { fetchLMArenaData, buildLMArenaMap } from './lmarenaScraper';
 import { env } from '../config/env';
 
 function debug(...args: unknown[]) {
@@ -27,6 +26,12 @@ function bareModelName(id: string): string {
   const parts = id.split('/');
   let bare = parts[parts.length - 1].toLowerCase();
   bare = bare.replace(/^(us|eu|apac|global)\./, '');
+  // Strip Bedrock-style provider prefixes: "anthropic.claude-..." → "claude-..."
+  bare = bare.replace(/^(anthropic|meta|amazon|cohere|mistral|ai21)\./i, '');
+  // Strip Bedrock version suffixes: "-v1:0", "-v2:0"
+  bare = bare.replace(/-v\d+:\d+$/, '');
+  // Strip Ollama size tags: "gemma3:4b" → "gemma3"
+  bare = bare.replace(/:\w+$/, '');
   return bare;
 }
 
@@ -71,6 +76,38 @@ function arenaMatchCandidates(modelId: string): string[] {
     candidates.add(v.replace(/-/g, '.'));
   }
 
+  // Insert hyphens at letter-digit boundaries: "gemma3" → "gemma-3"
+  const hyphenated = bare
+    .replace(/([a-zA-Z])(\d)/g, '$1-$2')
+    .replace(/(\d)([a-zA-Z])/g, '$1-$2');
+  if (hyphenated !== bare) {
+    candidates.add(hyphenated);
+    candidates.add(normalizeForArenaMatch(hyphenated));
+  }
+
+  // For Ollama models, also try with the size tag as part of the name
+  // e.g., "gemma3" with tag "4b" should try "gemma-3-4b" and "gemma-3-4b-it"
+  const afterSlash = modelId.split('/').pop() || '';
+  const colonIdx = afterSlash.indexOf(':');
+  if (colonIdx > -1) {
+    const family = afterSlash.substring(0, colonIdx).toLowerCase();
+    const tag = afterSlash.substring(colonIdx + 1).toLowerCase();
+    const familyNorm = family
+      .replace(/([a-zA-Z])(\d)/g, '$1-$2')
+      .replace(/(\d)([a-zA-Z])/g, '$1-$2');
+    candidates.add(`${familyNorm}-${tag}`);
+    candidates.add(`${familyNorm}-${tag}-it`);
+    candidates.add(`${familyNorm}-${tag}-instruct`);
+  }
+
+  // Strip 8-digit date suffixes: "claude-3-5-sonnet-20241022" → "claude-3-5-sonnet"
+  const noDate8 = bare.replace(/-\d{8}$/, '');
+  if (noDate8 !== bare) candidates.add(noDate8);
+
+  // Strip 4-digit suffixes: "-0125", "-2507"
+  const noDate4 = bare.replace(/-\d{4}$/, '');
+  if (noDate4 !== bare) candidates.add(noDate4);
+
   // Handle version number reordering: "gemini-pro-1.5" <-> "gemini-1.5-pro"
   const versionSwap = bare.match(/^(.+?)-([a-z]+)-(\d+[\.\d]*)$/);
   if (versionSwap) {
@@ -104,8 +141,8 @@ function matchOpenRouter(
 
 /**
  * Fuzzy-match an Ollama model name to an OpenRouter model.
- * e.g. "ollama/gemma3:4b" → "google/gemma-3-4b-it"
- *      "ollama/mistral"   → "mistralai/mistral-7b-instruct"
+ * e.g. "ollama/gemma3:4b" -> "google/gemma-3-4b-it"
+ *      "ollama/mistral"   -> "mistralai/mistral-7b-instruct"
  */
 function matchOllamaToOpenRouter(
   ollamaModel: string,
@@ -115,7 +152,7 @@ function matchOllamaToOpenRouter(
   const [family, sizeTag] = afterPrefix.split(':');
 
   // Normalize family: insert hyphens at letter-digit boundaries
-  // gemma3 → gemma-3, llama3 → llama-3, mistral → mistral
+  // gemma3 -> gemma-3, llama3 -> llama-3, mistral -> mistral
   const normalizedFamily = family
     .replace(/([a-zA-Z])(\d)/g, '$1-$2')
     .replace(/(\d)([a-zA-Z])/g, '$1-$2')
@@ -166,23 +203,10 @@ function matchLiteLLMPricing(
   return undefined;
 }
 
-function matchBenchmark(
-  modelId: string,
-  hfId: string | undefined,
-  benchMap: Map<string, OpenLLMLeaderboardEntry>
-): OpenLLMLeaderboardEntry | undefined {
-  if (hfId) {
-    const entry = benchMap.get(hfId.toLowerCase());
-    if (entry) return entry;
-  }
-  const bare = bareModelName(modelId);
-  return benchMap.get(bare);
-}
-
 function matchArena(
   modelId: string,
-  arenaMap: Map<string, ArenaEntry>
-): ArenaEntry | undefined {
+  arenaMap: Map<string, LMArenaEntry>
+): LMArenaEntry | undefined {
   const candidates = arenaMatchCandidates(modelId);
 
   // Try all candidate keys against the arena map
@@ -201,12 +225,23 @@ function matchArena(
   return undefined;
 }
 
+function entryToScore(entry: LMArenaEntry): ArenaScore {
+  return {
+    rating: entry.rating,
+    rating_upper: entry.ratingUpper,
+    rating_lower: entry.ratingLower,
+    rank: entry.rank,
+    votes: entry.votes,
+  };
+}
+
 function mergeModelData(
   configEntry: LiteLLMModelEntry | null,
   orModel: OpenRouterModel | undefined,
   litellmPricing: [string, LiteLLMPricingEntry] | undefined,
-  benchmark: OpenLLMLeaderboardEntry | undefined,
-  arena: ArenaEntry | undefined
+  arenaText: LMArenaEntry | undefined,
+  arenaCode: LMArenaEntry | undefined,
+  arenaVision: LMArenaEntry | undefined
 ): MergedModel {
   const modelId = orModel?.id || configEntry?.litellm_params.model || 'unknown';
   const provider = configEntry ? extractProvider(configEntry.litellm_params.model) : extractProvider(modelId);
@@ -215,8 +250,7 @@ function mergeModelData(
   if (configEntry) sources.push('config');
   if (orModel) sources.push('openrouter');
   if (litellmPricing) sources.push('litellm');
-  if (benchmark) sources.push('openllm');
-  if (arena) sources.push('arena');
+  if (arenaText || arenaCode || arenaVision) sources.push('lmarena');
 
   let inputPerMillion: number | null = null;
   let outputPerMillion: number | null = null;
@@ -289,13 +323,9 @@ function mergeModelData(
       price_source: priceSource,
     },
     benchmarks: {
-      arena_elo: arena?.elo || arena?.rating || null,
-      arena_categories: arena?.categories || null,
-      ollm_average: benchmark?.average || null,
-      ollm_mmlu_pro: benchmark?.mmlu_pro || null,
-      ollm_gpqa: benchmark?.gpqa || null,
-      ollm_math: benchmark?.math || null,
-      ollm_bbh: benchmark?.bbh || null,
+      arena_text: arenaText ? entryToScore(arenaText) : null,
+      arena_code: arenaCode ? entryToScore(arenaCode) : null,
+      arena_vision: arenaVision ? entryToScore(arenaVision) : null,
     },
     is_configured: !!configEntry,
     data_sources: sources,
@@ -310,7 +340,7 @@ export async function getAllModels(includeUnconfigured: boolean = false): Promis
   const warnings: string[] = [];
 
   // Fetch all data sources in parallel, catching individual failures
-  const [configModels, orModels, litellmPricing, benchmarks, arenaEntries] = await Promise.all([
+  const [configModels, orModels, litellmPricing, arenaData] = await Promise.all([
     Promise.resolve(parseConfig()),
     fetchOpenRouterModels().catch((err) => {
       warnings.push(`OpenRouter: ${err instanceof Error ? err.message : 'failed to load'}`);
@@ -320,13 +350,12 @@ export async function getAllModels(includeUnconfigured: boolean = false): Promis
       warnings.push(`LiteLLM pricing: ${err instanceof Error ? err.message : 'failed to load'}`);
       return {} as LiteLLMPricingMap;
     }),
-    fetchOpenLLMBenchmarks().catch((err) => {
-      warnings.push(`Open LLM Leaderboard: ${err instanceof Error ? err.message : 'failed to load'}`);
-      return [] as OpenLLMLeaderboardEntry[];
-    }),
-    fetchArenaRankings().catch((err) => {
-      warnings.push(`Arena leaderboard: ${err instanceof Error ? err.message : 'failed to load'}`);
-      return [] as ArenaEntry[];
+    fetchLMArenaData().then((data) => {
+      const emptyCats = (['text', 'code', 'vision'] as const).filter((c) => data[c].length === 0);
+      if (emptyCats.length > 0) {
+        warnings.push(`LMArena: no data for ${emptyCats.join(', ')}`);
+      }
+      return data;
     }),
   ]);
 
@@ -334,13 +363,14 @@ export async function getAllModels(includeUnconfigured: boolean = false): Promis
   debug(`Config models: ${configModels.length}`);
   debug(`OpenRouter models: ${orModels.length}`);
   debug(`LiteLLM pricing entries: ${Object.keys(litellmPricing).length}`);
-  debug(`Benchmark entries: ${benchmarks.length}`);
-  debug(`Arena entries: ${arenaEntries.length}`);
+  debug(`LMArena text: ${arenaData.text.length}, code: ${arenaData.code.length}, vision: ${arenaData.vision.length}`);
   if (warnings.length > 0) debug(`Warnings: ${warnings.join(', ')}`);
 
   const orMap = buildOpenRouterMap(orModels);
-  const benchMap = buildBenchmarkMap(benchmarks);
-  const arenaMap = buildArenaMap(arenaEntries);
+  const arenaTextMap = buildLMArenaMap(arenaData.text);
+  const arenaCodeMap = buildLMArenaMap(arenaData.code);
+  const arenaVisionMap = buildLMArenaMap(arenaData.vision);
+
 
   const mergedModels = new Map<string, MergedModel>();
 
@@ -355,9 +385,10 @@ export async function getAllModels(includeUnconfigured: boolean = false): Promis
         if (orModel.id.toLowerCase().startsWith(prefix)) {
           wildcardCount++;
           const lp = matchLiteLLMPricing(orModel.id, litellmPricing);
-          const bench = matchBenchmark(orModel.id, orModel.hugging_face_id, benchMap);
-          const arena = matchArena(orModel.id, arenaMap);
-          mergedModels.set(orModel.id, mergeModelData(configEntry, orModel, lp, bench, arena));
+          const at = matchArena(orModel.id, arenaTextMap);
+          const ac = matchArena(orModel.id, arenaCodeMap);
+          const av = matchArena(orModel.id, arenaVisionMap);
+          mergedModels.set(orModel.id, mergeModelData(configEntry, orModel, lp, at, ac, av));
         }
       }
       debug(`[wildcard] ${modelParam} -> matched ${wildcardCount} OpenRouter models`);
@@ -375,10 +406,10 @@ export async function getAllModels(includeUnconfigured: boolean = false): Promis
     }
 
     const lp = matchLiteLLMPricing(modelParam, litellmPricing);
-    const bench = matchBenchmark(modelParam, orModel?.hugging_face_id, benchMap);
-    const arena = matchArena(modelParam, arenaMap);
-
-    const merged = mergeModelData(configEntry, orModel, lp, bench, arena);
+    const at = matchArena(modelParam, arenaTextMap);
+    const ac = matchArena(modelParam, arenaCodeMap);
+    const av = matchArena(modelParam, arenaVisionMap);
+    const merged = mergeModelData(configEntry, orModel, lp, at, ac, av);
 
     // For Ollama fuzzy matches, keep the original model identity
     if (ollamaFuzzy) {
@@ -390,8 +421,8 @@ export async function getAllModels(includeUnconfigured: boolean = false): Promis
     debug(`[${configEntry.model_name}] (${modelParam})`);
     debug(`  OpenRouter: ${orModel ? `YES -> ${orModel.id}${ollamaFuzzy ? ' (fuzzy)' : ''}` : 'NO'}`);
     debug(`  LiteLLM:    ${lp ? `YES -> ${lp[0]}` : 'NO'}`);
-    debug(`  Benchmark:  ${bench ? `YES -> ${bench.model_name} (avg: ${bench.average})` : 'NO'}`);
-    debug(`  Arena:      ${arena ? `YES -> ${arena.name} (elo: ${arena.elo || arena.rating})` : 'NO'}`);
+    debug(`  Arena Text: ${at ? `YES -> ${at.modelDisplayName} (${at.rating})` : 'NO'}`);
+    debug(`  Arena Code: ${ac ? `YES -> ${ac.modelDisplayName} (${ac.rating})` : 'NO'}`);
 
     mergedModels.set(id, merged);
   }
@@ -402,9 +433,10 @@ export async function getAllModels(includeUnconfigured: boolean = false): Promis
       if (!mergedModels.has(orModel.id)) {
         unconfiguredCount++;
         const lp = matchLiteLLMPricing(orModel.id, litellmPricing);
-        const bench = matchBenchmark(orModel.id, orModel.hugging_face_id, benchMap);
-        const arena = matchArena(orModel.id, arenaMap);
-        mergedModels.set(orModel.id, mergeModelData(null, orModel, lp, bench, arena));
+        const at = matchArena(orModel.id, arenaTextMap);
+        const ac = matchArena(orModel.id, arenaCodeMap);
+        const av = matchArena(orModel.id, arenaVisionMap);
+        mergedModels.set(orModel.id, mergeModelData(null, orModel, lp, at, ac, av));
       }
     }
   }
