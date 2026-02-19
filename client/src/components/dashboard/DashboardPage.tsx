@@ -6,7 +6,6 @@ import { LoadingState, ErrorState, WarningBanner } from "@/components/shared/Loa
 import { ProviderBadge, CapabilityBadges } from "@/components/shared/ProviderBadge";
 import { formatPrice, formatContextLength } from "@/lib/utils";
 import { Link } from "react-router-dom";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { MergedModel } from "@/types/models";
 
 function StatsOverview({ models }: { models: MergedModel[] }) {
@@ -57,37 +56,6 @@ function StatsOverview({ models }: { models: MergedModel[] }) {
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-function TopModelsChart({ models }: { models: MergedModel[] }) {
-  const topModels = models
-    .filter((m) => m.benchmarks.arena_elo !== null)
-    .sort((a, b) => (b.benchmarks.arena_elo || 0) - (a.benchmarks.arena_elo || 0))
-    .slice(0, 15)
-    .map((m) => ({
-      name: m.name.length > 20 ? m.name.slice(0, 20) + "..." : m.name,
-      elo: m.benchmarks.arena_elo,
-    }));
-
-  if (topModels.length === 0) return null;
-
-  return (
-    <Card className="col-span-full">
-      <CardHeader>
-        <CardTitle>Top Models by Arena Elo</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={topModels} layout="vertical" margin={{ left: 120 }}>
-            <XAxis type="number" domain={['dataMin - 50', 'dataMax + 10']} />
-            <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
-            <Tooltip />
-            <Bar dataKey="elo" fill="#6366f1" radius={[0, 4, 4, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -151,7 +119,6 @@ export function DashboardPage() {
 
       <WarningBanner warnings={warnings} />
       <StatsOverview models={models} />
-      <TopModelsChart models={models} />
 
       <div>
         <h2 className="text-xl font-semibold mb-4">
