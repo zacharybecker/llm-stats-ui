@@ -2,7 +2,7 @@
 
 A self-hosted dashboard that aggregates LLM data from multiple sources into a unified view. Compare pricing, benchmark scores, context lengths, and capabilities across all your configured models.
 
-![Dashboard](docs/screenshots/dashboard.png)
+<img width="1667" height="1275" alt="image" src="https://github.com/user-attachments/assets/4553ad8f-aba4-4f0b-a133-f4c8513206ab" />
 
 ## Features
 
@@ -10,13 +10,15 @@ A self-hosted dashboard that aggregates LLM data from multiple sources into a un
 
 **Model Comparison** — Sortable, filterable table comparing models across every dimension: provider, context length, input/output pricing, arena ratings, configuration status, and capabilities. Search by name, filter by provider, and toggle between configured-only or all available models.
 
-![Comparison](docs/screenshots/comparison.png)
+<img width="1665" height="1274" alt="image" src="https://github.com/user-attachments/assets/21b4e129-3754-454c-b1ae-d3de6a30ed9a" />
+
 
 **Pricing** — Dedicated pricing view with per-million-token costs. Supports an inline cost calculator via query parameters (`?input_tokens=1000&output_tokens=2000&requests=10`).
 
 **Rankings** — Interactive scatter chart plotting LMArena benchmark scores against pricing, with bubble size representing vote confidence. Tabs for Text, Code, and Vision arena categories with ranked model lists.
 
-![Rankings](docs/screenshots/rankings.png)
+<img width="1664" height="1273" alt="image" src="https://github.com/user-attachments/assets/f4363ea9-717e-43e2-a9e5-40fd98f53b86" />
+
 
 **Model Detail** — Deep-dive view for individual models showing capabilities, full pricing breakdown (including cache and image pricing), and arena rankings with confidence intervals.
 
