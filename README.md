@@ -16,23 +16,26 @@ A self-hosted dashboard that aggregates LLM data from multiple sources into a un
 
 **Pricing** — Dedicated pricing view with per-million-token costs. Supports an inline cost calculator via query parameters (`?input_tokens=1000&output_tokens=2000&requests=10`).
 
-**Rankings** — Interactive scatter chart plotting LMArena benchmark scores against pricing, with bubble size representing vote confidence. Tabs for Text, Code, and Vision arena categories with ranked model lists.
+**Model Detail** — Deep-dive view for individual models showing capabilities and full pricing breakdown.
 
-<img width="1664" height="1273" alt="image" src="https://github.com/user-attachments/assets/f4363ea9-717e-43e2-a9e5-40fd98f53b86" />
+## Network Requirements
 
+This application requires outbound HTTPS (port 443) access to the following domain:
 
-**Model Detail** — Deep-dive view for individual models showing capabilities, full pricing breakdown (including cache and image pricing), and arena rankings with confidence intervals.
+| Domain | Purpose |
+|--------|---------|
+| `openrouter.ai` | Model catalog, pricing, and metadata |
+
+All external calls are read-only GETs to a public API (no authentication required). Responses are cached server-side to minimize traffic. The app degrades gracefully if the source is unreachable, displaying warnings for unavailable data.
 
 ## Data Sources
 
-The server fetches and merges data from four independent sources:
+The server fetches and merges data from two sources:
 
 | Source | Data Provided | Cache Default |
 |--------|--------------|---------------|
 | **LiteLLM Config** (`config.yaml`) | Your configured model list | On file change |
 | **OpenRouter API** | Metadata, descriptions, pricing, context lengths | 5 min |
-| **LiteLLM Pricing** (BerriAI GitHub) | Per-token costs | 30 min |
-| **LMArena** (arena.ai) | ELO ratings for text, code, and vision | 30 min |
 
 Intelligent fuzzy matching handles model ID variations across providers (date suffixes, version numbers, provider prefixes). Ollama models get special matching against OpenRouter metadata.
 
@@ -89,8 +92,6 @@ APP_NAME=Model Stats            # App title shown in the UI
 
 # Cache TTLs (seconds)
 OPENROUTER_CACHE_TTL=300        # OpenRouter data (default: 5 min)
-LITELLM_PRICING_CACHE_TTL=1800  # LiteLLM pricing (default: 30 min)
-ARENA_CACHE_TTL=1800            # LMArena benchmarks (default: 30 min)
 
 OLLAMA_FREE=true                # Show Ollama models as $0 (local inference)
 DEBUG=false                     # Verbose model matching logs
@@ -128,7 +129,7 @@ All endpoints under `/api/`:
 | `GET /models` | Merged model list. Query: `?provider=`, `?search=`, `?sort=field:dir`, `?include_unconfigured=true` |
 | `GET /models/:id` | Single model detail (ID supports slashes, e.g. `openai/gpt-4`) |
 | `GET /pricing` | Pricing data with optional cost calculator: `?input_tokens=&output_tokens=&requests=` |
-| `GET /benchmarks` | Arena benchmarks. Query: `?category=text|code|vision` |
+| `GET /benchmarks` | Benchmark data (reserved for future use) |
 | `GET /health` | Health check with data source status |
 | `POST /config/refresh` | Flush all caches and reload config |
 
@@ -148,7 +149,7 @@ client/src/
     dashboard/        # Dashboard cards and stats
     comparison/       # Comparison table
     pricing/          # Pricing table
-    leaderboard/      # Scatter chart and rankings
+    leaderboard/      # (removed)
     detail/           # Model detail view
     layout/           # Navbar, layout wrapper
     ui/               # shadcn/ui primitives
@@ -162,8 +163,6 @@ server/src/
     modelMatcher.ts   # Core merging logic
     configParser.ts   # LiteLLM YAML parsing
     openRouterClient.ts
-    litellmPricing.ts
-    lmarenaScraper.ts
     cache.ts          # TTL cache layer
   config/             # Environment config
   types/              # Shared types

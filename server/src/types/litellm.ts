@@ -15,21 +15,3 @@ export interface LiteLLMModelEntry {
     [key: string]: unknown;
   };
 }
-
-export interface LiteLLMPricingEntry {
-  max_tokens?: number;
-  max_input_tokens?: number;
-  max_output_tokens?: number;
-  output_cost_per_token?: number;
-  input_cost_per_token?: number;
-  cache_read_input_token_cost?: number;
-  litellm_provider?: string;
-  mode?: string;
-  supports_function_calling?: boolean;
-  supports_vision?: boolean;
-  supports_prompt_caching?: boolean;
-  supports_reasoning?: boolean;
-  [key: string]: unknown;
-}
-
-export type LiteLLMPricingMap = Record<string, LiteLLMPricingEntry>;

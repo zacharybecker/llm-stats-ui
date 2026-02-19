@@ -32,14 +32,6 @@ export async function fetchPricing(params?: {
   return data;
 }
 
-export async function fetchBenchmarks(params?: {
-  category?: 'text' | 'code' | 'vision' | 'all';
-  include_unconfigured?: boolean;
-}): Promise<ModelsResponse> {
-  const { data } = await api.get<ModelsResponse>('/benchmarks', { params });
-  return data;
-}
-
 export async function refreshConfig(): Promise<{ status: string; models_loaded: number }> {
   const { data } = await api.post('/config/refresh');
   return data;

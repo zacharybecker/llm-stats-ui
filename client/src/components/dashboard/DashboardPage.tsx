@@ -133,7 +133,7 @@ export function DashboardPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {models
               .filter((m) => !m.is_configured)
-              .sort((a, b) => (b.benchmarks.arena_text?.rating || 0) - (a.benchmarks.arena_text?.rating || 0))
+              .sort((a, b) => a.name.localeCompare(b.name))
               .map((model) => (
                 <ModelCard key={model.id} model={model} />
               ))}
