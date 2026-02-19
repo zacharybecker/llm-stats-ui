@@ -5,7 +5,8 @@ const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { models: allModels, status } = await getAllModels();
+    const includeUnconfigured = req.query.include_unconfigured === 'true';
+    const { models: allModels, status } = await getAllModels(includeUnconfigured);
     let models = allModels;
     const source = req.query.source as string || 'all';
 

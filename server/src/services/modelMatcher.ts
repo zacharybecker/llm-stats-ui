@@ -25,7 +25,10 @@ function normalizeModelId(id: string): string {
 
 function bareModelName(id: string): string {
   const parts = id.split('/');
-  return parts[parts.length - 1].toLowerCase();
+  let bare = parts[parts.length - 1].toLowerCase();
+  // Strip Bedrock cross-region prefixes (us., eu., apac., global.)
+  bare = bare.replace(/^(us|eu|apac|global)\./, '');
+  return bare;
 }
 
 function extractProvider(modelId: string): string {
@@ -175,7 +178,7 @@ function mergeModelData(
   arena: ArenaEntry | undefined
 ): MergedModel {
   const modelId = orModel?.id || configEntry?.litellm_params.model || 'unknown';
-  const provider = extractProvider(modelId);
+  const provider = configEntry ? extractProvider(configEntry.litellm_params.model) : extractProvider(modelId);
   const sources: string[] = [];
 
   if (configEntry) sources.push('config');
@@ -265,7 +268,7 @@ export interface DataSourceStatus {
   warnings: string[];
 }
 
-export async function getAllModels(): Promise<{ models: MergedModel[]; status: DataSourceStatus }> {
+export async function getAllModels(includeUnconfigured: boolean = false): Promise<{ models: MergedModel[]; status: DataSourceStatus }> {
   const warnings: string[] = [];
 
   // Fetch all data sources in parallel, catching individual failures
@@ -339,13 +342,15 @@ export async function getAllModels(): Promise<{ models: MergedModel[]; status: D
   }
 
   let unconfiguredCount = 0;
-  for (const orModel of orModels) {
-    if (!mergedModels.has(orModel.id)) {
-      unconfiguredCount++;
-      const lp = matchLiteLLMPricing(orModel.id, litellmPricing);
-      const bench = matchBenchmark(orModel.id, orModel.hugging_face_id, benchMap);
-      const arena = matchArena(orModel.id, arenaMap);
-      mergedModels.set(orModel.id, mergeModelData(null, orModel, lp, bench, arena));
+  if (includeUnconfigured) {
+    for (const orModel of orModels) {
+      if (!mergedModels.has(orModel.id)) {
+        unconfiguredCount++;
+        const lp = matchLiteLLMPricing(orModel.id, litellmPricing);
+        const bench = matchBenchmark(orModel.id, orModel.hugging_face_id, benchMap);
+        const arena = matchArena(orModel.id, arenaMap);
+        mergedModels.set(orModel.id, mergeModelData(null, orModel, lp, bench, arena));
+      }
     }
   }
 
@@ -361,6 +366,6 @@ export async function getAllModels(): Promise<{ models: MergedModel[]; status: D
 }
 
 export async function getModelById(id: string): Promise<MergedModel | undefined> {
-  const { models } = await getAllModels();
+  const { models } = await getAllModels(true);
   return models.find((m) => m.id === id);
 }

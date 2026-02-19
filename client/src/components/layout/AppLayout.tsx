@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useRefreshConfig } from "@/hooks/useModels";
+import { useShowAllModels } from "@/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -13,6 +14,7 @@ const navItems = [
 export function AppLayout() {
   const location = useLocation();
   const refreshMutation = useRefreshConfig();
+  const [showAllModels, setShowAllModels] = useShowAllModels();
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,6 +49,13 @@ export function AppLayout() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant={showAllModels ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowAllModels(!showAllModels)}
+            >
+              {showAllModels ? "All Models" : "Configured Only"}
+            </Button>
             <Button
               variant="outline"
               size="sm"

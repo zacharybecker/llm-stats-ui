@@ -5,18 +5,14 @@ const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { models: allModels, status } = await getAllModels();
+    const includeUnconfigured = req.query.include_unconfigured === 'true';
+    const { models: allModels, status } = await getAllModels(includeUnconfigured);
     let models = allModels;
 
     // Filter by provider
     const provider = req.query.provider as string | undefined;
     if (provider) {
       models = models.filter((m) => m.provider.toLowerCase() === provider.toLowerCase());
-    }
-
-    // Filter configured only
-    if (req.query.configured_only === 'true') {
-      models = models.filter((m) => m.is_configured);
     }
 
     // Search

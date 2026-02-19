@@ -10,13 +10,14 @@ import {
   type ColumnFiltersState,
 } from "@tanstack/react-table";
 import { useModels } from "@/hooks/useModels";
+import { useShowAllModels } from "@/hooks/useSettings";
 import { MergedModel } from "@/types/models";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadingState, ErrorState, WarningBanner } from "@/components/shared/LoadingState";
-import { ProviderBadge } from "@/components/shared/ProviderBadge";
+import { ProviderBadge, CapabilityBadges } from "@/components/shared/ProviderBadge";
 import { formatPrice, formatContextLength } from "@/lib/utils";
 import { Link } from "react-router-dom";
 
@@ -74,30 +75,15 @@ const columns = [
   columnHelper.display({
     id: "capabilities",
     header: "Capabilities",
-    cell: (info) => {
-      const c = info.row.original.capabilities;
-      const caps = [];
-      if (c.vision) caps.push("V");
-      if (c.function_calling) caps.push("T");
-      if (c.reasoning) caps.push("R");
-      if (c.prompt_caching) caps.push("C");
-      return caps.length > 0 ? (
-        <div className="flex gap-1">
-          {caps.map((cap) => (
-            <span key={cap} className="inline-flex h-5 w-5 items-center justify-center rounded bg-muted text-[10px] font-bold" title={
-              cap === "V" ? "Vision" : cap === "T" ? "Tools" : cap === "R" ? "Reasoning" : "Caching"
-            }>
-              {cap}
-            </span>
-          ))}
-        </div>
-      ) : null;
-    },
+    cell: (info) => (
+      <CapabilityBadges capabilities={info.row.original.capabilities} size="sm" />
+    ),
   }),
 ];
 
 export function ComparisonPage() {
-  const { data, isLoading, error, refetch } = useModels();
+  const [showAllModels] = useShowAllModels();
+  const { data, isLoading, error, refetch } = useModels({ include_unconfigured: showAllModels });
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);

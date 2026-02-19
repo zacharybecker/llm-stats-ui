@@ -9,13 +9,14 @@ export function ProviderBadge({ provider }: { provider: string }) {
   );
 }
 
-export function CapabilityBadges({ capabilities }: {
+export function CapabilityBadges({ capabilities, size }: {
   capabilities: {
     vision: boolean;
     function_calling: boolean;
     reasoning: boolean;
     prompt_caching: boolean;
   };
+  size?: "sm" | "default";
 }) {
   const badges = [];
   if (capabilities.vision) badges.push({ label: "Vision", color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" });
@@ -25,10 +26,12 @@ export function CapabilityBadges({ capabilities }: {
 
   if (badges.length === 0) return null;
 
+  const sizeClass = size === "sm" ? "text-[11px] px-1.5 py-0" : "";
+
   return (
     <div className="flex flex-wrap gap-1">
       {badges.map((b) => (
-        <Badge key={b.label} variant="secondary" className={b.color}>
+        <Badge key={b.label} variant="secondary" className={`${b.color} ${sizeClass}`}>
           {b.label}
         </Badge>
       ))}

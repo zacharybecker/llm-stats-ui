@@ -1,143 +1,69 @@
 model_list:
-  # OpenAI
+  # Azure OpenAI
   - model_name: gpt-4o
     litellm_params:
-      model: openai/gpt-4o
-      api_key: os.environ/OPENAI_API_KEY
+      model: azure/gpt-4o
+      api_base: os.environ/AZURE_API_BASE
+      api_key: os.environ/AZURE_API_KEY
+      api_version: "2024-12-01-preview"
+
+  - model_name: gpt-4.1
+    litellm_params:
+      model: azure/gpt-4.1
+      api_base: os.environ/AZURE_API_BASE
+      api_key: os.environ/AZURE_API_KEY
+      api_version: "2024-12-01-preview"
 
   - model_name: gpt-4o-mini
     litellm_params:
-      model: openai/gpt-4o-mini
-      api_key: os.environ/OPENAI_API_KEY
+      model: azure/gpt-4o-mini
+      api_base: os.environ/AZURE_API_BASE
+      api_key: os.environ/AZURE_API_KEY
+      api_version: "2024-12-01-preview"
 
-  - model_name: gpt-4-turbo
+  - model_name: gpt-4.1-mini
     litellm_params:
-      model: openai/gpt-4-turbo
-      api_key: os.environ/OPENAI_API_KEY
+      model: azure/gpt-4.1-mini
+      api_base: os.environ/AZURE_API_BASE
+      api_key: os.environ/AZURE_API_KEY
+      api_version: "2024-12-01-preview"
 
-  - model_name: o1
+  # AWS Bedrock
+  - model_name: sonnet-4.5
     litellm_params:
-      model: openai/o1
-      api_key: os.environ/OPENAI_API_KEY
-
-  - model_name: o1-mini
-    litellm_params:
-      model: openai/o1-mini
-      api_key: os.environ/OPENAI_API_KEY
-
-  - model_name: o3-mini
-    litellm_params:
-      model: openai/o3-mini
-      api_key: os.environ/OPENAI_API_KEY
-
-  # Anthropic
-  - model_name: claude-3.5-sonnet
-    litellm_params:
-      model: anthropic/claude-3.5-sonnet
-      api_key: os.environ/ANTHROPIC_API_KEY
-
-  - model_name: claude-3-opus
-    litellm_params:
-      model: anthropic/claude-3-opus
-      api_key: os.environ/ANTHROPIC_API_KEY
+      model: bedrock/anthropic.claude-sonnet-4-5-20250929-v1:0
+      aws_region_name: us-east-1
 
   - model_name: claude-3-haiku
     litellm_params:
-      model: anthropic/claude-3-haiku
-      api_key: os.environ/ANTHROPIC_API_KEY
+      model: bedrock/anthropic.claude-3-haiku-20240307-v1:0
+      aws_region_name: us-east-1
 
-  - model_name: claude-3.5-haiku
+  - model_name: sonnet-3.7
     litellm_params:
-      model: anthropic/claude-3.5-haiku
-      api_key: os.environ/ANTHROPIC_API_KEY
+      model: bedrock/anthropic.claude-3-7-sonnet-20250219-v1:0
+      aws_region_name: us-east-1
 
-  # Google
-  - model_name: gemini-2.0-flash
+  # Ollama (local)
+  - model_name: mistral7b
     litellm_params:
-      model: google/gemini-2.0-flash-001
-      api_key: os.environ/GOOGLE_API_KEY
+      model: ollama/mistral
+      api_base: http://localhost:11434
 
-  - model_name: gemini-1.5-pro
+  - model_name: gemma3:4b
     litellm_params:
-      model: google/gemini-1.5-pro
-      api_key: os.environ/GOOGLE_API_KEY
+      model: ollama/gemma3:4b
+      api_base: http://localhost:11434
 
-  - model_name: gemini-1.5-flash
+  - model_name: gemma3:12b
     litellm_params:
-      model: google/gemini-1.5-flash
-      api_key: os.environ/GOOGLE_API_KEY
+      model: ollama/gemma3:12b
+      api_base: http://localhost:11434
 
-  # DeepSeek
-  - model_name: deepseek-r1
+  - model_name: gpt-oss
     litellm_params:
-      model: deepseek/deepseek-r1
-      api_key: os.environ/DEEPSEEK_API_KEY
-
-  - model_name: deepseek-chat
-    litellm_params:
-      model: deepseek/deepseek-chat
-      api_key: os.environ/DEEPSEEK_API_KEY
-
-  # Meta (via Together)
-  - model_name: llama-3.3-70b
-    litellm_params:
-      model: meta-llama/llama-3.3-70b-instruct
-      api_key: os.environ/TOGETHER_API_KEY
-
-  - model_name: llama-3.1-405b
-    litellm_params:
-      model: meta-llama/llama-3.1-405b-instruct
-      api_key: os.environ/TOGETHER_API_KEY
-
-  - model_name: llama-3.1-8b
-    litellm_params:
-      model: meta-llama/llama-3.1-8b-instruct
-      api_key: os.environ/TOGETHER_API_KEY
-
-  # Mistral
-  - model_name: mistral-large
-    litellm_params:
-      model: mistralai/mistral-large-2411
-      api_key: os.environ/MISTRAL_API_KEY
-
-  - model_name: mistral-small
-    litellm_params:
-      model: mistralai/mistral-small-24b-instruct-2501
-      api_key: os.environ/MISTRAL_API_KEY
-
-  - model_name: mixtral-8x7b
-    litellm_params:
-      model: mistralai/mixtral-8x7b-instruct
-      api_key: os.environ/MISTRAL_API_KEY
-
-  # xAI
-  - model_name: grok-2
-    litellm_params:
-      model: x-ai/grok-2-1212
-      api_key: os.environ/XAI_API_KEY
-
-  # Qwen
-  - model_name: qwen-2.5-72b
-    litellm_params:
-      model: qwen/qwen-2.5-72b-instruct
-      api_key: os.environ/TOGETHER_API_KEY
-
-  - model_name: qwen-2.5-coder-32b
-    litellm_params:
-      model: qwen/qwen-2.5-coder-32b-instruct
-      api_key: os.environ/TOGETHER_API_KEY
-
-  # Cohere
-  - model_name: command-r-plus
-    litellm_params:
-      model: cohere/command-r-plus
-      api_key: os.environ/COHERE_API_KEY
-
-  # Amazon
-  - model_name: nova-pro
-    litellm_params:
-      model: amazon/nova-pro-v1
-      api_key: os.environ/AWS_ACCESS_KEY_ID
+      model: ollama/gpt-oss
+      api_base: http://localhost:11434
 
 litellm_settings:
   drop_params: true

@@ -6,6 +6,7 @@ export function useModels(params?: {
   sort?: string;
   search?: string;
   configured_only?: boolean;
+  include_unconfigured?: boolean;
 }) {
   return useQuery({
     queryKey: ['models', params],
@@ -27,6 +28,7 @@ export function usePricing(params?: {
   input_tokens?: number;
   output_tokens?: number;
   requests?: number;
+  include_unconfigured?: boolean;
 }) {
   return useQuery({
     queryKey: ['pricing', params],
@@ -38,6 +40,7 @@ export function usePricing(params?: {
 export function useBenchmarks(params?: {
   source?: 'arena' | 'openllm' | 'all';
   category?: string;
+  include_unconfigured?: boolean;
 }) {
   return useQuery({
     queryKey: ['benchmarks', params],

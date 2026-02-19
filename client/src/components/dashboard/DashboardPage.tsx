@@ -1,4 +1,5 @@
 import { useModels } from "@/hooks/useModels";
+import { useShowAllModels } from "@/hooks/useSettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingState, ErrorState, WarningBanner } from "@/components/shared/LoadingState";
@@ -132,7 +133,8 @@ function ModelCard({ model }: { model: MergedModel }) {
 }
 
 export function DashboardPage() {
-  const { data, isLoading, error, refetch } = useModels();
+  const [showAllModels] = useShowAllModels();
+  const { data, isLoading, error, refetch } = useModels({ include_unconfigured: showAllModels });
 
   if (isLoading) return <LoadingState />;
   if (error) return <ErrorState message="Failed to load models" onRetry={() => refetch()} />;
@@ -165,7 +167,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {models.filter((m) => !m.is_configured).length > 0 && (
+      {showAllModels && models.filter((m) => !m.is_configured).length > 0 && (
         <div>
           <h2 className="text-xl font-semibold mb-4">All Available Models</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

@@ -11,6 +11,7 @@ export async function fetchModels(params?: {
   sort?: string;
   search?: string;
   configured_only?: boolean;
+  include_unconfigured?: boolean;
 }): Promise<ModelsResponse> {
   const { data } = await api.get<ModelsResponse>('/models', { params });
   return data;
@@ -26,6 +27,7 @@ export async function fetchPricing(params?: {
   input_tokens?: number;
   output_tokens?: number;
   requests?: number;
+  include_unconfigured?: boolean;
 }): Promise<ModelsResponse> {
   const { data } = await api.get<ModelsResponse>('/pricing', { params });
   return data;
@@ -34,6 +36,7 @@ export async function fetchPricing(params?: {
 export async function fetchBenchmarks(params?: {
   source?: 'arena' | 'openllm' | 'all';
   category?: string;
+  include_unconfigured?: boolean;
 }): Promise<ModelsResponse> {
   const { data } = await api.get<ModelsResponse>('/benchmarks', { params });
   return data;

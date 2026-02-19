@@ -35,6 +35,13 @@ export function getProviderColor(provider: string): string {
     cohere: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
     deepseek: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
     xai: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+    azure: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200",
+    bedrock: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+    ollama: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+    groq: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
+    together: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200",
+    fireworks: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    perplexity: "bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-200",
   };
   return colors[provider.toLowerCase()] || "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200";
 }

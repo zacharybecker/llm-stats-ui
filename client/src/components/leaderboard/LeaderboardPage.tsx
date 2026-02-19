@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useBenchmarks } from "@/hooks/useModels";
+import { useShowAllModels } from "@/hooks/useSettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -19,7 +20,8 @@ const CHART_COLORS = [
 ];
 
 function ArenaTab() {
-  const { data, isLoading, error, refetch } = useBenchmarks({ source: "arena" });
+  const [showAllModels] = useShowAllModels();
+  const { data, isLoading, error, refetch } = useBenchmarks({ source: "arena", include_unconfigured: showAllModels });
 
   if (isLoading) return <LoadingState />;
   if (error) return <ErrorState message="Failed to load arena data" onRetry={() => refetch()} />;
@@ -76,7 +78,8 @@ function ArenaTab() {
 }
 
 function OpenLLMTab() {
-  const { data, isLoading, error, refetch } = useBenchmarks({ source: "openllm" });
+  const [showAllModels] = useShowAllModels();
+  const { data, isLoading, error, refetch } = useBenchmarks({ source: "openllm", include_unconfigured: showAllModels });
 
   if (isLoading) return <LoadingState />;
   if (error) return <ErrorState message="Failed to load benchmark data" onRetry={() => refetch()} />;
@@ -133,7 +136,8 @@ function OpenLLMTab() {
 }
 
 function CompareTab() {
-  const { data, isLoading, error, refetch } = useBenchmarks({ source: "all" });
+  const [showAllModels] = useShowAllModels();
+  const { data, isLoading, error, refetch } = useBenchmarks({ source: "all", include_unconfigured: showAllModels });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const models = data?.data || [];

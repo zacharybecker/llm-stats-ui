@@ -4,7 +4,7 @@ import { getCached, setCached } from './cache';
 import { env } from '../config/env';
 
 const CACHE_KEY = 'openllm_benchmarks';
-const HF_API_URL = 'https://datasets-server.huggingface.co/rows?dataset=open-llm-leaderboard%2Fresults&config=default&split=train&offset=0&length=200';
+const HF_API_URL = 'https://datasets-server.huggingface.co/rows?dataset=open-llm-leaderboard%2Fcontents&config=default&split=train&offset=0&length=100';
 
 export async function fetchOpenLLMBenchmarks(): Promise<OpenLLMLeaderboardEntry[]> {
   const cached = getCached<OpenLLMLeaderboardEntry[]>(CACHE_KEY);
@@ -22,14 +22,14 @@ export async function fetchOpenLLMBenchmarks(): Promise<OpenLLMLeaderboardEntry[
     const entries: OpenLLMLeaderboardEntry[] = rows.map((row: { row: Record<string, unknown> }) => {
       const r = row.row;
       return {
-        model_name: (r['fullname'] as string) || (r['model_name'] as string) || '',
-        average: (r['average'] as number) || 0,
-        mmlu_pro: r['mmlu_pro'] as number | undefined,
-        gpqa: r['gpqa'] as number | undefined,
-        math: (r['math_lvl5'] as number) || (r['math'] as number) || undefined,
-        bbh: r['bbh'] as number | undefined,
-        ifeval: r['ifeval'] as number | undefined,
-        musr: r['musr'] as number | undefined,
+        model_name: (r['fullname'] as string) || (r['Model'] as string) || '',
+        average: (r['Average ⬆️'] as number) || 0,
+        mmlu_pro: r['MMLU-PRO'] as number | undefined,
+        gpqa: r['GPQA'] as number | undefined,
+        math: (r['MATH Lvl 5'] as number) || undefined,
+        bbh: r['BBH'] as number | undefined,
+        ifeval: r['IFEval'] as number | undefined,
+        musr: r['MUSR'] as number | undefined,
       };
     });
 
