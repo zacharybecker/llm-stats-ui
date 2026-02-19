@@ -20,6 +20,11 @@ app.use('/api/models', modelsRouter);
 app.use('/api/pricing', pricingRouter);
 app.use('/api/benchmarks', benchmarksRouter);
 
+// UI config (app name, etc.)
+app.get('/api/config/ui', (_req, res) => {
+  res.json({ appName: env.APP_NAME });
+});
+
 // Config refresh
 app.post('/api/config/refresh', (_req, res) => {
   try {

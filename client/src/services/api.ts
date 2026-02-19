@@ -55,3 +55,8 @@ export async function fetchHealth(): Promise<{
   const { data } = await api.get('/health');
   return data;
 }
+
+export async function fetchUIConfig(): Promise<{ appName: string }> {
+  const { data } = await api.get('/config/ui');
+  return data;
+}

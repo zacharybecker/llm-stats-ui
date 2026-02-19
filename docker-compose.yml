@@ -7,8 +7,17 @@ services:
       - ./config.yaml:/app/config/config.yaml:ro
     environment:
       - NODE_ENV=production
+      - PORT=3001
+      - CONFIG_PATH=/app/config/config.yaml
+      - APP_NAME=Model Stats
+      # Cache TTLs (in seconds)
       - CACHE_TTL=300
-      - DEBUG=true
+      - OPENROUTER_CACHE_TTL=300
+      - LITELLM_PRICING_CACHE_TTL=1800
+      - BENCHMARK_CACHE_TTL=3600
+      - ARENA_CACHE_TTL=1800
+      # Debug mode
+      - DEBUG=false
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/api/health"]

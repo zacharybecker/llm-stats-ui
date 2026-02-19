@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchModels, fetchModelById, fetchPricing, fetchBenchmarks, refreshConfig } from '../services/api';
+import { fetchModels, fetchModelById, fetchPricing, fetchBenchmarks, refreshConfig, fetchUIConfig } from '../services/api';
 
 export function useModels(params?: {
   provider?: string;
@@ -56,5 +56,13 @@ export function useRefreshConfig() {
     onSuccess: () => {
       queryClient.invalidateQueries();
     },
+  });
+}
+
+export function useUIConfig() {
+  return useQuery({
+    queryKey: ['ui-config'],
+    queryFn: fetchUIConfig,
+    staleTime: Infinity,
   });
 }
