@@ -5,21 +5,48 @@ import { Badge } from "@/components/ui/badge";
 import { LoadingState, ErrorState } from "@/components/shared/LoadingState";
 import { ProviderBadge, CapabilityBadges } from "@/components/shared/ProviderBadge";
 import { formatPrice, formatNumber } from "@/lib/utils";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { ArenaScore } from "@/types/models";
 
-function ArenaCard({ label, score }: { label: string; score: ArenaScore | null }) {
-  if (!score) return null;
+
+const ARENA_COLORS: Record<string, string> = {
+  Text: "#6366f1",
+  Code: "#10b981",
+  Vision: "#f59e0b",
+};
+
+function ArenaBar({ label, score, min, max }: { label: string; score: ArenaScore; min: number; max: number }) {
+  const range = max - min || 1;
+  const pct = ((score.rating - min) / range) * 100;
+  const ciLeftPct = ((score.rating_lower - min) / range) * 100;
+  const ciWidthPct = ((score.rating_upper - score.rating_lower) / range) * 100;
+  const color = ARENA_COLORS[label] || "#6366f1";
+
   return (
-    <div className="p-3 rounded-lg bg-muted space-y-1">
-      <div className="flex justify-between items-center">
-        <span className="font-medium text-sm">{label}</span>
-        <span className="text-xs text-muted-foreground">#{score.rank}</span>
+    <div className="space-y-1.5">
+      <div className="flex justify-between items-baseline">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+          <span className="font-medium text-sm">{label}</span>
+          <span className="text-xs text-muted-foreground">#{score.rank}</span>
+        </div>
+        <div className="text-right">
+          <span className="text-lg font-bold">{Math.round(score.rating)}</span>
+          <span className="text-xs text-muted-foreground ml-1.5">
+            ({Math.round(score.rating_lower)}-{Math.round(score.rating_upper)})
+          </span>
+        </div>
       </div>
-      <div className="text-2xl font-bold">{Math.round(score.rating)}</div>
-      <div className="text-xs text-muted-foreground">
-        CI: {Math.round(score.rating_lower)} - {Math.round(score.rating_upper)} | {score.votes.toLocaleString()} votes
+      <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full opacity-20"
+          style={{ width: `${ciLeftPct + ciWidthPct}%`, left: `${ciLeftPct}%`, backgroundColor: color }}
+        />
+        <div
+          className="absolute inset-y-0 left-0 rounded-full"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
       </div>
+      <div className="text-xs text-muted-foreground">{score.votes.toLocaleString()} votes</div>
     </div>
   );
 }
@@ -38,14 +65,13 @@ export function ModelDetailPage() {
     { key: "arena_vision" as const, label: "Vision", score: model.benchmarks.arena_vision },
   ];
 
-  const radarData = arenaCategories
-    .filter((c) => c.score !== null)
-    .map((c) => ({
-      metric: c.label,
-      value: c.score!.rating,
-    }));
+  const activeArena = arenaCategories.filter((c): c is typeof c & { score: ArenaScore } => c.score !== null);
+  const hasAnyArena = activeArena.length > 0;
 
-  const hasAnyArena = arenaCategories.some((c) => c.score !== null);
+  // Scale bars from 0 to slightly above the max rating
+  const arenaMax = hasAnyArena
+    ? Math.max(...activeArena.map((c) => c.score.rating_upper)) * 1.05
+    : 0;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -59,9 +85,6 @@ export function ModelDetailPage() {
           )}
         </div>
         <p className="text-sm text-muted-foreground font-mono">{model.id}</p>
-        {model.description && (
-          <p className="text-muted-foreground">{model.description}</p>
-        )}
         <div className="flex gap-2 text-xs text-muted-foreground">
           Sources: {model.data_sources.join(", ")}
         </div>
@@ -142,37 +165,15 @@ export function ModelDetailPage() {
           <CardTitle>Arena Rankings</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-3">
-              {arenaCategories.map((c) => (
-                <ArenaCard key={c.key} label={c.label} score={c.score} />
+          {hasAnyArena ? (
+            <div className="space-y-5">
+              {activeArena.map((c) => (
+                <ArenaBar key={c.key} label={c.label} score={c.score} min={0} max={arenaMax} />
               ))}
-
-              {!hasAnyArena && (
-                <p className="text-muted-foreground text-sm">No arena data available for this model.</p>
-              )}
             </div>
-
-            {radarData.length >= 2 && (
-              <div>
-                <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart data={radarData}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="metric" />
-                    <PolarRadiusAxis />
-                    <Tooltip />
-                    <Radar
-                      name={model.name}
-                      dataKey="value"
-                      stroke="#6366f1"
-                      fill="#6366f1"
-                      fillOpacity={0.3}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
+          ) : (
+            <p className="text-muted-foreground text-sm">No arena data available for this model.</p>
+          )}
         </CardContent>
       </Card>
     </div>
